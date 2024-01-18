@@ -1,0 +1,80 @@
+---
+- name: Offline environment image import
+  tags: 
+    - directpv
+    - directpv-image
+  block:
+    - name: Create image storage directory
+      file:
+        path: "/server/tools/{{ role_service_name }}/image"
+        state: directory
+
+    - name: copy image to remote host
+      copy:
+        src: "{{ image_path }}/{{ role_service_name }}/{{ role_service_name }}.{{ image.version }}.tar.gz"
+        dest: "/server/tools/{{ role_service_name }}/image/{{ role_service_name }}.{{ image.version }}.tar.gz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: image load
+      community.docker.docker_image_load:
+        path: "/server/tools/{{ role_service_name }}/image/{{ role_service_name }}.{{ image.version }}.tar.gz"
+  when: network == false
+
+- name: Installation directpv service
+  tags: 
+    - directpv
+    - directpv-install
+  block:
+    - name: install directpv plugin
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/directpv/tasks/install/krew-plugin.yml"
+
+    - name: deploy directpv
+      shell: "
+          source /etc/profile.d/krew.sh;
+          kubectl directpv install
+      "
+
+    - name: check if service is healthy
+      shell: "
+          source /etc/profile.d/krew.sh;
+          kubectl directpv info
+      "
+      register: directpv_is_healthy
+      until: directpv_is_healthy.rc == 0
+      retries: 5
+      delay: 10
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+
+- name: directpv disk init
+  tags: 
+    - directpv
+    - directpv-disk-init
+  block:
+    - name: include init_disk_list
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/directpv/tasks/init/disk.yml"
+
+    - name: copy config kubeadm
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/tools/tasks/config/kubeadm-install.yml"
+
+    - name: install krew
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/tools/tasks/install/krew.yml"
+
+    - name: install directpv plugin
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/directpv/tasks/install/krew-plugin.yml"
+
+    - name: Initialize disk 
+      shell: "
+          source /etc/profile.d/krew.sh;
+          kubectl directpv drives format
+          --drives  {{ init_disk|join(',') }}
+          --nodes {{ ansible_hostname }}
+      "
+      when: init_disk | length > 0
+
+    - name: remove config kubeadm
+      shell: rm -f /root/.kube/config
+  when: 
+    - ansible_hostname in service|community.general.json_query('metadata[*].node')

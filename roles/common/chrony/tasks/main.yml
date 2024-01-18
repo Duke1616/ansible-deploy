@@ -1,0 +1,41 @@
+---
+- name: install chrony
+  tags: ['chrony']
+  block:
+    - name: Install different operating systems
+      include_tasks: "install/{{ ansible_distribution.split(' ')[0] | lower }}.yml"
+
+    - name: start chrony
+      service: name=chronyd state=started enabled=yes
+
+- name: Configure the chrony server
+  tags: ['chrony', 'chrony-server']
+  block:
+    - name: copy chrony server conf
+      template:
+        src: "{{ inventory_dir }}/roles/common/chrony/templates/chrony-server.conf.j2"
+        dest: /etc/chrony.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart chrony
+    - meta: flush_handlers
+
+    - name: enabled ntp
+      command: timedatectl set-ntp true
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['time_sync_server'][0]].inventory_hostname }}"
+
+- name: Configure the chrony client
+  tags: ['chrony', 'chrony-client']
+  block:
+    - name: copy chrony client conf
+      template:
+        src: "{{ inventory_dir }}/roles/common/chrony/templates/chrony-client.conf.j2"
+        dest: /etc/chrony.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart chrony
+    - meta: flush_handlers
+  when: ansible_default_ipv4.address != hostvars[groups['time_sync_server'][0]].inventory_hostname

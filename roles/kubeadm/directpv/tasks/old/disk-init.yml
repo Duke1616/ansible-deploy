@@ -1,0 +1,35 @@
+# - name: directpv disk init
+#   tags: ['directpv', 'directpv-disk-init']
+#   block:
+#     - name: Initialize disk 
+#       shell: "
+#           source /etc/profile.d/krew.sh;
+#           kubectl directpv drives format
+#           --drives  {{ meta_item.disk|join(',') }}
+#           --nodes {{ meta_item.node }}
+#         "
+#       loop: "{{ service.metadata }}"
+#       register: init_disk
+#       loop_control:
+#         loop_var: meta_item
+
+#     - name: debug init status
+#       block:
+#         - name: debug init status
+#           assert:
+#             that: item.stderr == ""
+#             quiet: yes
+#             fail_msg: "{{ item.stderr_lines }}"
+#           loop: "{{ init_disk.results }}"
+#           debugger: never
+#           when: item.stderr != ""
+#       rescue:
+#         - name: Print when errors
+#           ansible.builtin.debug:
+#             msg: "磁盘初始化失败"
+#           debugger: always
+#           failed_when: True
+#           ignore_errors: True
+#   run_once: yes
+#   delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+#   when: service.disk_init == true

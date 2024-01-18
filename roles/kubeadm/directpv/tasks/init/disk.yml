@@ -1,0 +1,63 @@
+- name: 定义存储LVM、RAID的磁盘数组
+  set_fact:
+    raid_node: []
+    lvm_node: []
+
+- name: 获取RAID使用节点
+  set_fact:
+    raid_node: "{{ raid_node + [item.key] | map('regex_replace', raid_regex, raid_replace)}}"
+  loop: "{{ ansible_devices | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  vars:
+    # 磁盘路径
+    name: /dev/
+    # RAID使用磁盘正则匹配规则
+    raid_regex: '^(.*)$'
+    # RAID使用磁盘正则替换（sda）-> (/dev/sda)
+    raid_replace: '{{ name ~ "" ~ "\1" }}'
+  when: item.value.links.masters | length > 0
+  
+- name: 获取LVM使用节点
+  set_fact:
+    lvm_node: "{{ lvm_node + [item.key] | map('regex_replace', lvm_regex, lvm_replace)}}"
+  loop: "{{ ansible_lvm.pvs | dict2items  }}"
+  vars:
+    # LVM使用磁盘正则匹配
+    lvm_regex: '^(.*)(\d+.*$)'
+    # LVM使用磁盘替换（/dev/sda1）——>(/dev/sda)
+    lvm_replace: '{{ "\1" }}'
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: 排除系统可用磁盘
+  debug:
+    msg: "{{ lvm_node | union(raid_node) }}"
+
+- name: Generate Initializable Disk
+  set_fact:
+    # 先查询交集、在查询并集、剩余的就是可初始化磁盘
+    init_disk: "{{ define_init_disk | intersect(system_exist_disk) | intersect(raid_node) | intersect(lvm_node) | difference(system_already_disk) }}"
+  vars:
+    # 定义初始化磁盘查询条件
+    disk_list: "metadata[?node=='{{ ansible_hostname }}'].disk"
+    # 磁盘路径
+    exist_name: /dev/
+    # 存在磁盘正则匹配规则
+    exist_regex: '^(.*)$'
+    # 存在磁盘正则替换（sda）-> (/dev/sda)
+    exist_replace: '{{ exist_name ~ "" ~ "\1" }}'
+    # 已经初始化磁盘正则匹配
+    mount_regex: '^(.*)(\d+.*$)'
+    # 已经初始化磁盘替换（/dev/sda1）——>(/dev/sda)
+    mount_replace: '{{ "\1" }}'
+    # 定义初始化磁盘
+    define_init_disk: "{{ service|community.general.json_query(disk_list) | flatten  }}"
+    # 系统存在磁盘
+    system_exist_disk: "{{ ansible_devices | dict2items | community.general.json_query('[*].key') | map('regex_replace', exist_regex, exist_replace) | list }}"
+    # 系统挂载磁盘
+    system_mount_disk: "{{ ansible_mounts | community.general.json_query('[*].device') | unique | map('regex_replace', mount_regex, mount_replace) | list }}"
+
+- name: print init_disk
+  debug:
+    msg: "{{ init_disk }}"

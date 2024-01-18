@@ -1,0 +1,22 @@
+version: '3'
+services:
+  {{ REDIS_CONTAINER_NAME }}:
+    container_name: {{ REDIS_CONTAINER_NAME }}
+    image: {{ REDIS_IMAGE }}
+    restart: always
+    ports:
+      - {{ REDIS_PORT }}:6379
+    command: redis-server /etc/conf/redis.conf
+    volumes:
+      - {{ REDIS_CONTAINER_NAME }}:/data
+      - ../files/redis.conf:/etc/conf/redis.conf
+    environment:
+      - TZ=Asia/Shanghai
+      - LANG=en_US.UTF-8
+volumes:
+  {{ REDIS_CONTAINER_NAME }}:
+
+networks:
+  default:
+    external:
+      name: {{ DOCKER_NETWORK }}

@@ -1,0 +1,167 @@
+# 请勿调整数组服务顺序，不然可能会出现意想不到的错误
+---
+kubeadm_include_services:
+  - name: k8tz
+    enabled: true
+    allow_master_dispatch: false
+    lables: ""
+    taint: ""
+    metadata:
+      - node: all
+  - name: cert-manager
+    enabled: true
+    lables: ""
+    taint: ""
+    allow_master_dispatch: false
+    metadata:
+      - node: all
+  - name: traefik
+    enabled: true
+    allow_master_dispatch: true
+    lables: ""
+    taint: ""
+    metadata:
+      - node: k8s-master01
+      - node: k8s-master02
+      - node: k8s-master03
+  - name: directpv
+    enabled: true
+    test: init
+    allow_master_dispatch: false
+    lables: ""
+    taint: ""
+    disk_init: true
+    metadata:
+      - node: "k8s-node01"
+        disk:
+          - /dev/sda
+          - /dev/sdb
+      - node: "k8s-node02"
+        disk:
+          - /dev/sda
+          - /dev/sdb
+      - node: "k8s-node05"
+        disk:
+          - /dev/sdc
+
+# kubeadm_include_services: [
+#   {
+#     name: k8tz,
+#     enabled: true,
+#     allow_master_dispatch: false,
+#     meta: {
+#       node: all
+#     }
+#   },
+#   {
+#     name: directpv,
+#     enabled: true,
+#     allow_master_dispatch: false,
+#     meta: {
+#       node: [
+#         "k8s-node{1...}": [
+#           "/dev/sd{a...b}"
+#         ],
+#         k8s-node02: [
+#           /dev/sdc
+#         ]
+#       ],
+#       labels: k8s-node03,
+#       taints: 
+#     }
+#   }
+# ]
+# ]
+#   - name: k8tz
+#     enabled: true
+#     allow_master_dispatch: false
+#     meta:
+#       - node: all
+#   - name: cert-manager
+#     enabled: true
+#     allow_master_dispatch: false
+#     meta:
+#       - node: all
+#   - name: traefik
+#     enabled: true
+#     allow_master_dispatch: true
+#     meta:
+#       - node: k8s-master*
+#   - name: directpv
+#     enabled: true
+#     allow_master_dispatch: false
+#     meta:
+#       - node:
+#         k8s-node01: ["/dev/sda/", /dev/sdb/]
+#         k8s-node02: ["/dev/sda/", /dev/sdb/]
+#         k8s-node03: ["/dev/sda/", /dev/sdb/]
+#       - label: kubernetes.io.directpv=true
+#   - name: longhorn
+#     enabled: true
+#     allow_master_dispatch: false
+#     meta:
+#       - node:
+#         k8s-node01: ["/data/longhorn"]
+#         k8s-node02: ["/data/longhorn"]
+#         k8s-node03: ["/data/longhorn"]
+#         k8s-node04: ["/data/longhorn"]
+        
+# kubeadm_include_services: [
+#     {
+#       name: k8tz,
+#       enabled: true,
+#       allow_master_dispatch: false,
+#       meta: {}
+#     },
+#     {
+#       name: cert-manager,
+#       enabled: true,
+#       allow_master_dispatch: false,
+#       meta: {}
+#     },
+#     {
+#       name: traefik,
+#       enabled: true,
+#       allow_master_dispatch: true,
+#       meta: {
+#         node: [
+#           k8s-master01,
+#           k8s-master02,
+#           k8s-master03
+#         ]
+#       }
+#     },
+#     {
+#       name: directpv,
+#       enabled: true,
+#       allow_master_dispatch: false,
+#       meta: {
+#         node: [
+#           k8s-node01,
+#           k8s-node02,
+#         ],
+#         disk: {
+#           disk: [
+#             "/dev/sda",
+#             "/dev/sdb"
+#           ],
+#           disk: [
+#             "/dev/sda",
+#             "/dev/sdb"
+#           ]
+#         },
+#       }
+#     },
+#     {
+#       name: minio,
+#       mode: cluster,
+#       enabled: true,
+#       allow_master_dispatch: false,
+#       single: {
+#         depend: ['k8tz', 'nfs'],
+#       },
+#       cluster: {
+#         depend: ['k8tz', 'directpv', 'cert-manager'],
+#       }
+#     }
+# ]

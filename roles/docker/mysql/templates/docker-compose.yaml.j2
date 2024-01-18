@@ -1,0 +1,37 @@
+#jinja2:lstrip_blocks: True
+version: '3'
+services:
+  mysql:
+    restart: always
+    image: mysql:{{ deploy_info.version }}
+    container_name: {{ deploy_info.project_name }}-{{ deploy_info.environment }}-mysql
+    ports:
+      - {{ deploy_info.port }}:3306
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      {% if deploy_info.user is none %}
+      {% for user in deploy_info.user %}
+      - MYSQL_INIT_PASSWORD_{{ user.name | upper }}=${MYSQL_INIT_PASSWORD_{{ user.name | upper }}}
+      - MYSQL_INIT_USERNAME_{{ user.name | upper }}=${MYSQL_INIT_USERNAME_{{ user.name | upper }}}
+      {% for db in user.database %}
+      - MYSQL_INIT_DATABASE_{{ user.name | upper }}_{{ db | upper }}=${MYSQL_INIT_DATABASE_{{ user.name | upper }}_{{ db | upper }}}
+      {% endfor %}
+      {% endfor %}
+      {% endif %}
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+    volumes:
+      - mysql_{{ deploy_info.environment }}:/var/lib/mysql
+      - ./create_user.sh:/docker-entrypoint-initdb.d/create_user.sh
+      - ./my.cnf:/etc/mysql/my.cnf
+
+volumes:
+  mysql_{{ deploy_info.environment }}:
+
+networks:
+  default:
+    external:
+      name: {{ deploy_info.project_name }}

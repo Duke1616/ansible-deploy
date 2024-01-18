@@ -1,0 +1,20 @@
+- name: Custom initialization installation
+  tags: 
+    - kubeadm-services
+  block:
+    - name: debug
+      debug: 
+        msg: "{{ kubeadm_include_services }}"
+
+    - name: include kubeadm services
+      include_role:
+        name: "{{ inventory_dir }}/roles/kubeadm/{{ item.name }}"
+      loop: "{{ kubeadm_include_services }}"
+      vars:
+        service: "{{ item }}"
+        meta: "{{ item.meta }}"
+      loop_control:
+        loop_var: item
+      when: 
+        - item.enabled == true
+        - item.name == "directpv"

@@ -1,0 +1,39 @@
+- name: Whether to enable the repositories security check
+  set_fact:
+    registry_urls: '{{ item.value }}'
+  loop: "{{ lookup('dict', imported_json) }}"
+  when: item.key == "insecure-registries"
+
+- name: Determine whether to configure repeated add
+  set_fact:
+    insecure: True
+  loop: "{{ registry_urls }}"
+  when:
+    - registry_urls is defined
+    - outer_item.item.registry_url == item
+
+- name: debug pre
+  debug:
+    msg: "{{ imported_json }}"
+
+- name: modify daemon.json
+  block:
+    - name: modify docker insecure daemon.json
+      set_fact:
+        imported_json: "{{ imported_json | combine(item, recursive=True, list_merge='append') }}"
+      loop:
+        - {
+              'insecure-registries': [
+                "{{ outer_item.item.registry_url }}"
+              ]
+          }
+
+    - name: debug post
+      debug:
+        msg: "{{ imported_json }}"
+
+    - name: write updated daemon.json to file
+      copy: 
+        content: "{{ imported_json | to_nice_json }}"
+        dest: "/server/tools/docker/files/daemon.json"
+  when: insecure | default(False) != True

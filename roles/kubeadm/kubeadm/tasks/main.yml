@@ -1,0 +1,221 @@
+---
+- name: pre system facts
+  tags: 
+    - kubeadm
+    - kubeadm-init
+    - kubeadm-install
+    - kubeadm-pki
+    - kubeadm-add-master
+    - kubeadm-add-node
+  block:
+    - name: Populate service facts
+      service_facts:
+
+    - name: Determines whether the kubeadm cluster is initialized
+      ansible.builtin.set_fact:
+        kubeadm_init_host: "{{ hostvars[groups['master'][0]].ansible_facts.services['kubelet.service']['state'] | default('none') }}"
+
+    - name: Create directory
+      file:
+        path: /server/tools/kubeadm/{{ item }}
+        state: directory
+      with_items:
+        - libs
+        - files
+        - pki/etcd
+        - image
+  when:
+    - inventory_hostname in groups['kubeadm']
+
+- name: Installing kubeadm Cluster Dependency
+  tags: 
+    - kubeadm
+    - kubeadm-install
+    - kubeadm-init
+    - kubeadm-add-master
+    - kubeadm-add-node
+  block:
+    - name: Initialize the installation of the docker
+      include_role:
+        name:  "{{ inventory_dir }}/roles/docker/docker"
+      when: kubeadm_cri == "docker"
+    # TODO放置位置问题
+    # - name: Initialize kubeadm config
+    #   include_tasks: install/init/config.yml
+
+    - name: Initialize kubeadm pull images
+      include_tasks: install/init/image.yml
+
+    - name: Initialize install kubernetes-pip 
+      include_tasks: install/init/kubernetes-pip.yml
+
+    - name: Initialize install kubeadm、kubelet、kubectl
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/kubeadm/tasks/install/system/{{ ansible_distribution.split(' ')[0] | lower }}.yml"
+
+    - name: Populate service facts
+      service_facts:
+
+    - name: Initialize Recompile command
+      include_tasks: install/init/command.yml
+      when: recompile_kubeadm == True
+  when:
+    - ansible_facts.services['kubelet.service']['status'] is undefined
+    - inventory_hostname in groups['kubeadm']
+    - kubeadm_setup | default("install") == "install"
+
+- name: High availability cluster dependency
+  tags:
+    - kubeadm
+    - kubeadm-init
+  block:
+    - name: Initalize Nginx
+      include_role:
+        name: "{{ inventory_dir }}/roles/common/nginx"
+
+    - name: nginx configures the k8s proxy
+      template:
+        src: "{{ inventory_dir }}/roles/kubeadm/kubeadm/templates/kubeadm-nginx.conf.j2"
+        dest: "/usr/local/nginx/conf/tcpconf/kubeadm.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart nginx
+    - meta: flush_handlers
+
+    - name: Initalize keepalived
+      include_role:
+        name:  "{{ inventory_dir }}/roles/common/keepalived"
+  when: 
+    - groups['master'] | length > 1
+    - inventory_hostname in groups['keepalived']
+
+- name: Example Initialize the kubeadm cluster
+  tags: 
+    - kubeadm
+    - kubeadm-init
+  block:
+    - name: Initialize kubeadm config
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/kubeadm/tasks/install/init/config.yml"
+
+    - name: init kubeadm cluster
+      shell: kubeadm init --config "/server/tools/kubeadm/kubeadm.yaml"
+      register: init_cluster
+
+    - name: kubelet Start up automatically
+      service: name=kubelet state=started enabled=yes
+
+    - name: Populate service facts
+      service_facts:
+
+    - name: Monitor the 6443 port until the waiting timeout
+      wait_for:
+        port: 6443
+        delay: 10
+        timeout: 60
+        state: started
+
+    - name: Configure the command line tool kubectl
+      shell: >
+        mkdir -p /root/.kube \
+        && rm -f /root/.kube/config \
+        && cp -i /etc/kubernetes/admin.conf /root/.kube/config \
+        && chown root:root /root/.kube/config
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - kubeadm_init_host != "running"
+    - kubeadm_setup | default("install") == "install"
+
+- name: Operation after initialization
+  tags: 
+    - kubeadm
+    - kubeadm-pki
+    - kubeadm-add-master
+    - kubeadm-add-node
+  block:
+    - name: Synchronizing pki Files
+      fetch:
+        src: "/etc/kubernetes/pki/{{ item.src }}"
+        dest: "/server/tools/kubeadm/pki/{{ item.dest }}"
+        flat: yes
+      with_items:
+        - { src: 'ca.crt', dest: 'ca.crt'}
+        - { src: 'ca.key', dest: 'ca.key' }
+        - { src: 'sa.key', dest: 'sa.key' }
+        - { src: 'sa.pub', dest: 'sa.pub' }
+        - { src: 'front-proxy-ca.key', dest: 'front-proxy-ca.key' }
+        - { src: 'front-proxy-ca.crt', dest: 'front-proxy-ca.crt' }
+        - { src: 'etcd/ca.crt', dest: 'etcd/ca.crt' }
+        - { src: 'etcd/ca.key', dest: 'etcd/ca.key' }
+
+    - name: Print command to add a node token
+      shell: kubeadm token create --print-join-command
+      register: kubeadm_token
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - kubeadm_init_host is defined
+    - kubeadm_init_host == "running"
+
+- name: Expansion master
+  tags:
+    - kubeadm
+    - kubeadm-add-master
+  block:
+    - name: include master.yml
+      include_tasks: extend/master.yml
+  when:
+    - inventory_hostname in groups['master']
+    - ansible_facts.services['kubelet.service']['state'] != "running"
+
+- name: Expansion node
+  tags:
+    - kubeadm
+    - kubeadm-add-node
+  block:
+    - name: include node.yml
+      include_tasks:  extend/node.yml
+  when:
+    - inventory_hostname in groups['node']
+    - ansible_facts.services['kubelet.service']['state'] != "running"
+
+- name: system compatibility
+  tags:
+    - kubeadm
+    - kubeadm-compat
+  block: 
+    - name: kylin system compatibility
+      include_tasks: "compatible/{{ ansible_distribution.split(' ')[0]  | lower }}.yml"
+      when: ansible_distribution.split(' ')[0]  | lower == "kylin"
+  when:
+    - inventory_hostname in groups['kubeadm']
+    - ansible_facts.services['kubelet.service']['state'] == "running"
+
+- name: Install the kubeadm cni plugin
+  tags:
+    - kubeadm
+    - kubeadm-cni
+  block:
+    - name: include {{ kubeadm_cni.name }} cni
+      include_tasks: "cni/{{ use_cni_plugin }}.yml"
+      loop: "{{ kubeadm_cni_plugin }}"
+      vars:
+        cni_name: "{{ kubeadm_cni.name }}"
+        cni_version: "{{ kubeadm_cni.version }}"
+      loop_control:
+        loop_var: kubeadm_cni
+      when: use_cni_plugin == kubeadm_cni.name
+  when:
+    - inventory_hostname in groups['kubeadm']
+
+- name: Installing kubeadm Cluster Dependency
+  tags: 
+    - kubeadm-test
+  block:
+    - name: Initialize the installation of the docker
+      include_role:
+        name:  "{{ inventory_dir }}/roles/docker/docker"
+      when: kubeadm_cri == "docker"
+  when:
+    - inventory_hostname in groups['kubeadm']
+    - kubeadm_setup | default("install") == "install"

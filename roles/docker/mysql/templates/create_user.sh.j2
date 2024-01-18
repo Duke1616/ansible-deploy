@@ -1,0 +1,14 @@
+set -e
+{% if deploy_info.user is none %}
+mysql -uroot -p$MYSQL_ROOT_PASSWORD <<EOF
+{% for info in result_user.results %}
+{% set user_pass=info.ansible_facts | dict2items %}
+CREATE USER "$MYSQL_INIT_USERNAME_{{ info.item.name | upper }}"@'%' IDENTIFIED BY "${{ user_pass[0].key }}";
+{% for db in info.item.database %}
+CREATE DATABASE $MYSQL_INIT_DATABASE_{{ info.item.name | upper }}_{{ db | upper }};
+GRANT ALL PRIVILEGES ON $MYSQL_INIT_DATABASE_{{ info.item.name | upper }}_{{ db | upper }}.* TO "$MYSQL_INIT_USERNAME_{{ info.item.name | upper }}"@'%';
+{% endfor %}
+{% endfor %}
+flush privileges;
+EOF
+{% endif %}

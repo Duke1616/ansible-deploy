@@ -1,0 +1,32 @@
+MYSQL_ROOT_PASSWORD: Y7zbxiZsMYfmUwYAmtSBJfKZ
+MYSQL_DEP_DATABASE: ebondidlrp
+MYSQL_DEP_FORMDATA: form_data
+MYSQL_DEP_USERNAME: ebondidlrp
+MYSQL_DEP_PASSWORD: lWvF052Oar4ZcyfrS6jkVKZw
+
+
+deploy_uuid: ab13901d-5e93-1c7d-49c7-f1d67ef09198
+service:
+  - uuid: ab13901d-5e93-1c7d-49c7-f1d67ef09198
+    name: mysql
+    project_name: ebond-idl
+    environment: uat
+    host: 192.168.43.24
+    port: 3306
+    version: 8.0.27
+    user:
+      - name: ebond
+        database:
+          - core2db
+          - ebondidlrp
+          - ebondidlstat
+      - name: test
+        database:
+          - core2db
+  - uuid: 7f7314ca-3504-3860-236b-cface7891278
+    name: mysql
+    project_name: ebond-iungo
+    environment: stag
+    host: 192.168.43.24
+    port: 3306
+    version: 8.0.27

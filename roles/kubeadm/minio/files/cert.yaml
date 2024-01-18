@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tenant-certmanager-cert
+  namespace: minio
+spec:
+  dnsNames:
+    - '*.example.com'
+    - '*.minio.svc.cluster.local'
+    - '*.minio.minio.svc.cluster.local'
+    - '*.minio-hl.minio.svc.cluster.local'
+  secretName: tenant-certmanager-tls
+  duration: 2160h
+  renewBefore: 360h
+  subject:
+    organizations:
+      - Example Inc.
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer

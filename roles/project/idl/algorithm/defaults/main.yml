@@ -1,0 +1,3 @@
+ALGORITHM_CONTAINER_NAME: ocr_interface
+ALGORITHM_IMAGE: 10.31.0.200:9077/ebondmedcore/ocr_interface:uat-774e346c
+ALGORITHM_IMAGE_PATH: /mnt/image.tar

@@ -1,0 +1,26 @@
+- name: load images
+  block:
+    - name: copy calico images
+      copy:
+        src: "{{ image_path }}/kubeadm/{{ cni_name }}.{{ cni_version }}.tar.gz"
+        dest: "/server/tools/kubeadm/image/{{ cni_name }}.{{ cni_version }}.tar.gz"
+
+    - name: load calico image
+      community.docker.docker_image_load:
+        path: "/server/tools/kubeadm/image/{{ cni_name }}.{{ cni_version }}.tar.gz"
+  when: network == false
+
+- name: deploy clico plugin
+  block:
+    - name: copy calico daemonset file
+      copy:
+        src: "{{ inventory_dir }}/roles/kubeadm/kubeadm/files/cni/calico.yml"
+        dest: "/server/tools/kubeadm/files/calico.yml"
+        mode: 0644
+      when: inventory_hostname == hostvars[groups['master'][0]].inventory_hostname
+
+    - name: kubeadm apply calico
+      kubernetes.core.k8s:
+        state: present
+        src: "/server/tools/kubeadm/files/calico.yml"
+  when: inventory_hostname == hostvars[groups['master'][0]].inventory_hostname

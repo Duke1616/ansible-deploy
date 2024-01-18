@@ -1,0 +1,46 @@
+[mysqld]
+server_id = 33060000
+port = 3306
+log_timestamps=SYSTEM
+max_allowed_packet = 64M
+read_only = 0
+character_set_server = utf8mb4
+collation-server = utf8mb4_general_ci
+secure_file_priv = ""
+max_connect_errors = 100000
+interactive_timeout = 1800
+net_read_timeout = 360
+connect_timeout = 300
+net_write_timeout = 900
+wait_timeout = 28800
+max_connections = 5000
+max_execution_time = 2400
+default_authentication_plugin=mysql_native_password
+
+# BINLOG
+log_bin = mysql-bin
+binlog_format = row
+log_slave_updates = 1
+max_binlog_size = 200M
+relay_log = relay-bin
+sync_binlog = 1
+
+# GTID
+gtid_mode = ON
+enforce_gtid_consistency = 1
+binlog_gtid_simple_recovery = 1
+
+# ENGINE
+default_storage_engine = InnoDB
+innodb_flush_log_at_trx_commit=1
+log_bin_trust_function_creators=1
+lower_case_table_names=1
+innodb_log_file_size=1024M
+innodb_strict_mode=0
+
+# LOG
+general_log = ON
+general_log_file = /var/lib/mysql/general.log
+
+[client]
+default-character-set = utf8mb4

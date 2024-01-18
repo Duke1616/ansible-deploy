@@ -1,0 +1,12 @@
+# MySQL
+MYSQL_ROOT_PASSWORD: ry3Y5hfVpp77MDxZ
+
+# MinIO
+MINIO_ACCESS_KEY: Zv7qXVrs3BncHAxR
+MINIO_SECRET_KEY: kagnVWwNP2PPZpcP
+
+# MongoDB
+
+# RabbitMQ
+
+# 

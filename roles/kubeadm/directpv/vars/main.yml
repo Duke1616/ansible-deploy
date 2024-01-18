@@ -1,0 +1,18 @@
+service:
+  name: directpv
+  allow_master_dispatch: false
+  lables: ""
+  taint: ""
+  disk_init: true
+  metadata:
+    # 磁盘格式强制要求: /dev/sdb /dev/sdc
+    # 请勿使用: /dev/sdb1 /dev/sdc1
+    - node: "k8s-node01"
+      disk:
+        - /dev/sdb
+        - /dev/sdc
+        - /dev/sdd
+    - node: "k8s-node02"
+      disk:
+        - /dev/sdb
+        - /dev/sdc

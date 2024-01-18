@@ -1,0 +1,40 @@
+service:
+  name: longhorn
+  allow_master_dispatch: false
+  lables: node.longhorn.io/create-default-disk=config
+  annotate: node.longhorn.io/default-disks-config='[{"path":"/data/longhorn","allowScheduling":true}]'
+  disk_init: false
+  disk_quota: 80
+  expose_type: ingress
+  ingress:
+    name: longhorn-ui
+    service_name: longhorn-frontend
+    tls:
+      enabled: False
+      type: cert-manager
+  metadata:
+    - node: "k8s-node01"
+      disk:
+        - /dev/sdg
+    - node: "k8s-node02"
+      disk:
+        - /dev/sdg
+    - node: repository
+      disk:
+        - /dev/sda
+  backup:
+    enabled: True
+    # system代表是通过Ansible部署的服务
+    # s3代表使用自建的类型
+    type: system
+    name: s3-secret
+    bucket: longhorn
+    s3:
+      endpoints: http://minio.svc.cluster.local
+      access_key_id: "test"
+      secret_access_key: "test"
+      cert: ""
+    system:
+      name: ""
+      tenant: ""
+      namespace: minio

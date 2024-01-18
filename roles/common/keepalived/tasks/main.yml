@@ -1,0 +1,43 @@
+- name: keepalived install
+  tags: ['keepalived', 'keepalived-install']
+  block:
+    - name: Install different operating systems
+      include_tasks: "install/{{ ansible_distribution.split(' ')[0] | lower }}.yml"
+
+    - name: copy check nginx script
+      copy:
+        src: "{{ inventory_dir }}/roles/common/keepalived/files/check_nginx.sh"
+        dest: /etc/keepalived/check_nginx.sh
+        owner: root
+        group: root
+        mode: 0644 
+
+    - name: copy keepalived conf
+      template:
+        src: "{{ inventory_dir }}/roles/common/keepalived/templates/keepalived.conf.j2"
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart keepalived
+
+    - name: start keepalived
+      service: name=keepalived state=started enabled=yes
+  when:
+    - inventory_hostname in query('inventory_hostnames', 'keepalived')
+
+# - name: keepalived conf
+#   tags: kubeadm
+#   block:
+#     - name: copy k8s.conf to nginx tcpconf
+#       template:
+#         src: k8s.conf
+#         dest: /usr/local/nginx/conf/tcpconf/k8s.conf
+#         owner: root
+#         group: root
+#         mode: 0644
+#       notify: reload nginx
+#       when: 
+#         - item == ansible_default_ipv4.address
+#       loop: "{{ query('inventory_hostnames', 'keepalived') }}"
+#     - meta: flush_handlers

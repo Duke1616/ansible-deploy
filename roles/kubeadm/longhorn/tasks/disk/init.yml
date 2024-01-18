@@ -1,0 +1,43 @@
+
+- name: Create a new primary partition
+  community.general.parted:
+    device: "{{ disk_init }}"
+    number: 1
+    flags: ['lvm']
+    state: present
+  loop: "{{ par_item }}"
+  loop_control:
+    loop_var: disk_init
+
+- name: vg longhorn volume group creation
+  community.general.lvg:
+    vg: longhorn
+    pvs: "{{ par_item|join('1' ',') }}1"
+    state: present
+  debugger: on_failed
+  ignore_errors: yes
+
+- name: lv data-infer lvm creation
+  relvm:
+    vg: longhorn
+    lv: data-infer
+    size: +40%FREE
+    state: present
+    resizefs: true
+
+- name: create file system for /dev/longhorn/data-infer
+  filesystem:
+    fstype: xfs
+    dev: /dev/longhorn/data-infer
+
+- name: create directory
+  file:
+    path: "/data/longhorn"
+    state: directory
+
+- name: mount logical volumes
+  mount:
+    name: /data/longhorn
+    src: /dev/longhorn/data-infer
+    fstype: xfs
+    state: mounted

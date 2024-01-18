@@ -1,0 +1,9 @@
+---
+- name: restart mongo
+  docker_compose:
+    project_src: "{{ tempPath }}/mongo/files"
+    project_name: "{{ project_name }}"
+    restarted: true
+  when: info.exists
+  tags:
+    - mongo

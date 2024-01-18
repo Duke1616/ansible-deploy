@@ -1,0 +1,9 @@
+namespace: traefik
+role_service_name: traefik
+
+image:
+  version: v2.9.4
+
+helm_chart:
+  name: traefik
+  version: v19.0.3

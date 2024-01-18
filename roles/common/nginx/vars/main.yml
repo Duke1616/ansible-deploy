@@ -1,0 +1,46 @@
+# nginx状态 install upgrade
+nginx_setup: install
+
+# nginx必须为列表中第一个
+nginx_modules_tasks:
+  - name: nginx
+    enabled: True
+    version: 1.22.1
+    compress_format: tar.gz
+  - name: nginx_upstream_check_module
+    enabled: True
+    version: master
+    compress_format: zip
+  - name: nginx-module-vts
+    enabled: True
+    version: 0.2.1
+    compress_format: zip
+
+
+
+# nginx_modules_tasks: [
+#     {
+#       name: nginx, 
+#       download_url: "",
+#       src: "",
+#       unarchive_name: "nginx-1.22.0.tar.gz",
+#       dest: "/usr/local/nginx-1.22.0"
+#     },
+#     {
+#       name: nginx_upstream_check,
+#       download_url: "",
+#       src: "",
+#       unarchive_name: "nginx_upstream_check_module-master.zip",
+#       dest: "/usr/local/nginx_upstream_check_module-master" 
+#     },
+#     {
+#       name: nginx_vts, 
+#       download_url: "",
+#       src: "",
+#       unarchive_name: "nginx-module-vts-0.2.1.zip",
+#       dest: "/usr/local/nginx-module-vts-0.2.1"
+#     }
+# ]
+# nginx_modules_tasks_length: nginx_modules_tasks|length
+
+# nginx_setup: install

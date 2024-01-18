@@ -1,0 +1,9 @@
+---
+- name: restart redis
+  docker_compose:
+    project_src: "{{ tempPath }}/redis/files"
+    project_name: "{{ project_name }}"
+    restarted: true
+  when: info.exists
+  tags:
+    - redis

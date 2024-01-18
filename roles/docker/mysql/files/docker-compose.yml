@@ -1,0 +1,35 @@
+version: '3'
+services:
+  mysql:
+    restart: always
+    image: mysql:8.0.27
+    container_name: ebond-idl-uat-mysql
+    ports:
+      - 3306:3306
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+      - MYSQL_INIT_PASSWORD_EBOND=${MYSQL_INIT_PASSWORD_EBOND}
+      - MYSQL_INIT_USERNAME_EBOND=${MYSQL_INIT_USERNAME_EBOND}
+      - MYSQL_INIT_DATABASE_EBOND_CORE2DB=${MYSQL_INIT_DATABASE_EBOND_CORE2DB}
+      - MYSQL_INIT_DATABASE_EBOND_EBONDIDLRP=${MYSQL_INIT_DATABASE_EBOND_EBONDIDLRP}
+      - MYSQL_INIT_DATABASE_EBOND_EBONDIDLSTAT=${MYSQL_INIT_DATABASE_EBOND_EBONDIDLSTAT}
+      - MYSQL_INIT_PASSWORD_TEST=${MYSQL_INIT_PASSWORD_TEST}
+      - MYSQL_INIT_USERNAME_TEST=${MYSQL_INIT_USERNAME_TEST}
+      - MYSQL_INIT_DATABASE_TEST_CORE2DB=${MYSQL_INIT_DATABASE_TEST_CORE2DB}
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+    volumes:
+      - mysql_uat:/var/lib/mysql
+      - ./create_user.sh:/docker-entrypoint-initdb.d/create_user.sh
+      - ./my.cnf:/etc/mysql/my.cnf
+
+volumes:
+  mysql_uat:
+
+networks:
+  default:
+    external:
+      name: ebond-idl

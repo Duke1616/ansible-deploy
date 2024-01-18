@@ -1,0 +1,31 @@
+---
+- name: modify docker gpu daemon.json
+  set_fact:
+    imported_json: "{{ imported_json | combine(item, recursive=True)}}"
+  loop:
+    - {  
+        'default-runtime': 'nvidia',
+        'runtimes': {
+          'nvidia': { 
+              'path': 'nvidia-container-runtime',
+              'runtimeArgs': []
+          }
+        } 
+      }
+
+- name: write updated daemon.json to file
+  copy: 
+    content: "{{ imported_json | to_nice_json }}"
+    dest: "/server/tools/docker/files/daemon.json"
+  when: insecure | default(False) != True
+
+- name: copy docker daemon
+  copy:
+    src: "/server/tools/docker/files/daemon.json"
+    remote_src: yes
+    dest: "/etc/docker/daemon.json"
+    owner: root
+    group: root
+    backup: yes
+    mode: 0644
+  notify: restart docker

@@ -1,0 +1,38 @@
+- name: Create directory
+  file:
+    path: /etc/kubernetes/pki/etcd
+    state: directory
+
+- name: Initialize kubeadm config
+  include_tasks: "{{ inventory_dir }}/roles/kubeadm/kubeadm/tasks/install/init/config.yml"
+
+- name: 拷贝kubeadm证书文件
+  copy:
+    src: "/server/tools/kubeadm/pki/{{ item.src }}"
+    dest: "/etc/kubernetes/pki/{{ item.dest }}"
+    mode: 0644
+  with_items:
+    - { src: 'ca.crt', dest: 'ca.crt'}
+    - { src: 'ca.key', dest: 'ca.key' }
+    - { src: 'sa.key', dest: 'sa.key' }
+    - { src: 'sa.pub', dest: 'sa.pub' }
+    - { src: 'front-proxy-ca.key', dest: 'front-proxy-ca.key' }
+    - { src: 'front-proxy-ca.crt', dest: 'front-proxy-ca.crt' }
+    - { src: 'etcd/ca.crt', dest: 'etcd/ca.crt' }
+    - { src: 'etcd/ca.key', dest: 'etcd/ca.key' }
+
+- name: shell
+  shell: "{{ kubeadm_token.stdout }} --control-plane"
+
+- name: kubelet Start up automatically
+  service: name=kubelet state=started enabled=yes
+
+- name: Populate service facts
+  service_facts:
+
+- name: Monitor the 6443 port until the waiting timeout
+  wait_for:
+    port: 6443
+    delay: 10
+    timeout: 60
+    state: started

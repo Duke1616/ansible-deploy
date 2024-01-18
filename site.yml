@@ -1,0 +1,43 @@
+---
+# 部署常用组件
+- hosts: all
+  remote_user: root
+  gather_facts: true
+  roles:
+    - name: system initialization
+      role: roles/common/base
+    - name: time synchronization
+      role: roles/common/chrony
+    - name: private repo
+      role: roles/common/repository
+      tags: never
+    - name: reverse proxy
+      role: roles/common/nginx
+      tags: never
+    - name: cluster high availability
+      role: roles/common/keepalived
+      tags: never
+
+# docker相关应用
+- hosts: docker
+  remote_user: root
+  gather_facts: true
+  roles:
+    - name: install docker
+      role: roles/docker/docker
+      tags: never
+    - name: docker deployment service 
+      role: roles/docker/service
+      tags: never
+
+# kubeadm相关应用
+- hosts: kubeadm
+  remote_user: root
+  gather_facts: true
+  roles:
+    - name: install kubeadm
+      role: roles/kubeadm/kubeadm
+      tags: never
+    - name: kubeadm deployment service
+      role: roles/kubeadm/service
+      tags: never

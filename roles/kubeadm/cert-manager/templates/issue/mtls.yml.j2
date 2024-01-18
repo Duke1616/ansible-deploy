@@ -1,0 +1,25 @@
+#jinja2:lstrip_blocks: True 
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ args_deploy.name }}-mtls
+  namespace: {{ args_deploy.namespace }}
+spec:
+  secretName: {{ args_deploy.name }}-mtls
+  duration: 2160h
+  renewBefore: 360h
+  subject:
+    organizations:
+      - {{ deplpy_domain_leaf }} Inc.
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  dnsNames:
+    {% for mtls in args_mtls_domain %}
+    - "{{ mtls }}"
+    {% endfor %}
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer

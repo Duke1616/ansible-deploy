@@ -1,0 +1,22 @@
+version: '3'
+services:
+  {{ RABBITMQ_CONTAINER_NAME }}:
+    restart: always
+    image: {{ RABBITMQ_IMAGE }}
+    container_name: {{ RABBITMQ_CONTAINER_NAME }}
+    ports:
+      - {{ RABBITMQ_HTTP_PORT }}:15672
+      - {{ RABBITMQ_AMQP_PORT }}:5672
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - {{ RABBITMQ_CONTAINER_NAME }}:/var/lib/rabbitmq
+      - ../files/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+volumes:
+  {{ RABBITMQ_CONTAINER_NAME }}:
+
+networks:
+  default:
+    external:
+      name: {{ DOCKER_NETWORK }}

@@ -1,0 +1,17 @@
+# Be sure to have the same name as the roles
+role_service_name: minio
+
+image:
+  version: RELEASE.2022-10-15T19-57-03Z
+
+operator:
+  version: v4.5.4
+  ingress:
+    name: minio-operator
+    service_name: console
+    tls:
+      enabled: False
+      type: cert-manager
+
+helm_chart:
+  version: v4.5.4

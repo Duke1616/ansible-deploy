@@ -1,0 +1,34 @@
+- name: copy configure conf
+  template:
+    src: "{{ inventory_dir }}/roles/common/nginx/templates/configure.sh.j2"
+    dest: "/server/tools/nginx/conf/configure.sh"
+    owner: root
+    group: root
+    backup: yes
+    mode: 0644
+
+# - name: Add nginx modules
+#   include_tasks: "{{ inventory_dir }}/roles/common/nginx/tasks/module.yml"
+#   loop: "{{ nginx_modules_tasks }}"
+#   vars:
+#     nginx_module_name: "{{ item.name }}"
+#     nginx_module_version: "{{ item.version }}"
+#     nginx_compress_format: "{{ item.compress_format }}"
+
+# - name: Configure
+#   command: bash /server/tools/nginx/conf/configure.sh
+#   args:
+#     chdir: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}
+
+# - name: make
+#   command: make
+#   args:
+#     chdir: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}
+
+- name: copy nginx command
+  copy:
+    remote_src: yes
+    src: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}/objs/nginx
+    dest: /usr/local/nginx/sbin/nginx
+  notify: restart nginx
+- meta: flush_handlers

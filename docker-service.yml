@@ -1,0 +1,7 @@
+- hosts: docker
+  remote_user: root
+  gather_facts: true
+  roles:
+    - name: kubeadm tools install
+      role: roles/docker/mysql
+      tags: never

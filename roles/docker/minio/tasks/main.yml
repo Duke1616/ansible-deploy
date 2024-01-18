@@ -1,0 +1,54 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - minio
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - minio
+
+- name: Inspect minio images
+  community.docker.docker_image_info:
+    name:
+     - "{{ MINIO_IMAGE }}"
+  register: result
+  tags:
+    - minio
+
+- name: Load minio image
+  community.docker.docker_image_load:
+    path: /files/minio.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - minio
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2 
+    dest: "{{ tempPath }}/minio/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart minio
+  tags:
+    - minio
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ MINIO_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - minio
+  
+- name: Start minio
+  docker_compose:
+    project_src: "{{ tempPath }}/minio/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - minio
+

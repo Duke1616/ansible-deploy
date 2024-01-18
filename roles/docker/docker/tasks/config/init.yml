@@ -1,0 +1,32 @@
+- name: Check that the daemon.json exists
+  stat:
+    path: /etc/docker/daemon.json
+  register: stat_result
+
+- name: copy not exist daemon.json
+  copy:
+    src: "{{ inventory_dir }}/roles/docker/docker/files/daemon.json"
+    dest: "/server/tools/docker/files/daemon.json"
+    owner: root
+    group: root
+    mode: 0644
+  when: not stat_result.stat.exists
+
+- name: copy exist daemon.json
+  copy:
+    remote_src: yes
+    src: /etc/docker/daemon.json
+    dest: "/server/tools/docker/files/daemon.json"
+    owner: root
+    group: root
+    mode: 0644
+  when: stat_result.stat.exists == true
+
+- name: Find out what the remote machine's mounts are
+  ansible.builtin.slurp:
+    src: "/server/tools/docker/files/daemon.json"
+  register: imported_json
+
+- name: base64 json parsing
+  set_fact:
+    imported_json: "{{ imported_json.content | b64decode |from_json}}"

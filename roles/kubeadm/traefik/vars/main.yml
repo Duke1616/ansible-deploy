@@ -1,0 +1,9 @@
+service:
+  name: traefik
+  # Can be either Deployment or DaemonSet
+  kind: DaemonSet
+  allow_master_dispatch: true
+  lables: node.traefik.io/create-default=config
+  metadata:
+    - node: "k8s-master01"
+    - node: "k8s-master02"

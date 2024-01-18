@@ -1,0 +1,37 @@
+# 如果节点数量为1，默认认为是单节点部署
+# 如果节点数量大于1，默认认为是集群模式部署，其中第一个实例为初始化主节点
+[master]
+192.168.43.11 hostname=k8s-master01 type=cpu
+192.168.43.12 hostname=k8s-master02 type=cpu
+192.168.43.13 hostname=k8s-master03 type=cpu
+
+# k8s node节点
+[node]
+192.168.43.14 hostname=k8s-node01 type=cpu
+192.168.43.15 hostname=k8s-node02 type=cpu
+
+[kubeadm:children]
+master
+node
+
+[docker:children]
+master
+node
+
+
+# 部署nginx
+[nginx]
+192.168.43.14 hostname=k8s-node01 type=cpu
+192.168.43.15 hostname=k8s-node02 type=cpu
+192.168.43.11 hostname=k8s-master01 type=cpu
+
+[keepalived]
+192.168.43.14 hostname=k8s-node01 type=cpu
+192.168.43.15 hostname=k8s-node02 type=cpu
+
+# ntp服务端地址、内网环境
+[time_sync_server]
+192.168.43.11 hostname=k8s-master01 type=cpu
+
+[repo]
+192.168.43.20 hostname=repository type=cpu

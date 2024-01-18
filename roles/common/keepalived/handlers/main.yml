@@ -1,0 +1,5 @@
+- name: restart keepalived
+  service: name=keepalived state=restarted
+
+- name: reload nginx
+  service: name=nginx state=reloaded

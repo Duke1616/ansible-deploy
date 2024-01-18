@@ -1,0 +1,15 @@
+# Be sure to have the same name as thecert-manager roles
+role_service_name: cert-manager
+namespace: cert-manager
+image:
+  version: v1.10.0
+
+helm_chart:
+  name: cert-manager
+  version: v1.10.0
+  log_level: 2
+  install_crds: true
+
+
+ca:
+  secret_name: ca-tls

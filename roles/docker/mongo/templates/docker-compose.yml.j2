@@ -1,0 +1,26 @@
+version: '3'
+services:
+  {{ MONGO_CONTAINER_NAME }}:
+    restart: always
+    image: {{ MONGO_IMAGE }}
+    container_name: {{ MONGO_CONTAINER_NAME }}
+    ports:
+      - {{ MONGO_PORT }}:27017
+    environment:
+      TZ: Asia/Shanghai
+      MONGO_INITDB_ROOT_USERNAME: {{ MONGO_ROOT_USERNAM }}
+      MONGO_INITDB_ROOT_PASSWORD: {{ MONGO_ROOT_PASSWORD }}
+      MONGO_DEP_USERNAME: {{ MONGO_DEP_USERNAME }}
+      MONGO_DEP_PASSWORD: {{ MONGO_DEP_PASSWORD }}
+      MONGO_DEP_DATABASE: {{ MONGO_DEP_DATABASE }}
+    volumes: 
+      - {{ MONGO_CONTAINER_NAME }}:/data/db
+      - ../files/create_user.sh:/docker-entrypoint-initdb.d/create_user.sh
+
+volumes:
+  {{ MONGO_CONTAINER_NAME }}:
+
+networks:
+  default:
+    external:
+      name: {{ DOCKER_NETWORK }}

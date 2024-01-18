@@ -1,0 +1,6 @@
+- name: yum install ntpd
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - ntp

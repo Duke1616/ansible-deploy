@@ -1,0 +1,91 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - frontend      
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - frontend
+
+- name: Inspect frontend images
+  community.docker.docker_image_info:
+    name:
+     - "{{ FRONTEND_IMAGE }}"
+  register: result
+  tags:
+    - frontend
+
+- name: Load frontend image
+  community.docker.docker_image_load:
+    path: /files/mongo.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - frontend
+
+
+- name: Copy nginx main configuration
+  template:
+    src: nginx.conf.j2 
+    dest: "{{ tempPath }}/frontend/files/nginx.conf"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart frontend
+  tags:
+    - frontend
+
+- name: Copy nginx project configuration
+  template:
+    src: "{{ project_name }}.conf.j2"
+    dest: "{{ tempPath }}/frontend/files/{{ project_name }}.conf"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart frontend
+  tags:
+    - frontend
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2 
+    dest: "{{ tempPath }}/frontend/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart frontend
+  tags:
+    - frontend
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ FRONTEND_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - frontend
+
+# - name: Does container exist?
+#   ansible.builtin.debug:
+#     msg: "The container {{ 'exists' if info.exists else 'does not exist' }}"
+#   tags:
+#     - frontend
+# 
+# - name: Print information about container
+#   ansible.builtin.debug:
+#     var: info.container
+#   when: info.exists 
+#   tags:
+#     - frontend
+
+- name: Start frontend
+  docker_compose:
+    project_src: "{{ tempPath }}/frontend/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - frontend

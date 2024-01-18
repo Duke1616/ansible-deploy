@@ -1,0 +1,3 @@
+- name: yum install kubeadm
+  shell: >
+    yum install ipvsadm kubeadm-1.23.10 kubectl-1.23.10 kubelet-1.23.10 -y

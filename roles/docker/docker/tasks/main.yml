@@ -1,0 +1,121 @@
+---
+- name: pre system facts
+  tags:
+    - docker
+    - docekr-conf
+    - docker-install
+    - docker-login
+  block:
+    - name: Create directory
+      file:
+        path: /server/tools/docker/{{ item }}
+        state: directory
+      with_items:
+        - libs
+        - files
+        - image
+
+    - name: include tasks
+      include_tasks: "config/init.yml"
+
+    - name: Populate service facts
+      service_facts:
+  when:
+    - inventory_hostname in (groups['docker'] | union(groups['kubeadm']) | unique)
+
+- name: docker install
+  tags:
+    - docker
+    - docker-install
+  block:
+    - name: Install docker
+      include_tasks: "install/{{ ansible_distribution.split(' ')[0] | lower }}.yml"
+
+    - name: Install ansible to run docker dependencies
+      include_tasks: "install/depend.yml"
+
+    - name: start dokcer
+      service: name=docker state=started enabled=yes
+
+    - name: Populate service facts
+      service_facts:
+  when:
+    - inventory_hostname in (groups['docker'] | union(groups['kubeadm']) | unique)
+    - docker_setup | default("install") == "install"
+
+- name: docker config
+  tags:
+    - docker
+    - docker-conf
+  block:
+    - name: Viewing the Server Type
+      set_fact:
+        server_type: "{{ hostvars[inventory_hostname].type }}"
+
+    - name: include insert gpu daemon
+      include_tasks: config/gpu.yml
+      when: server_type == "gpu"
+
+    - name: copy the file, if it doesnt exist already
+      copy:
+        remote_src: yes
+        src: "/server/tools/docker/files/daemon.json"
+        dest: /etc/docker/daemon.json
+        mode: 0644
+      notify: restart docker
+      when: not stat_result.stat.exists
+    - meta: flush_handlers
+  when:
+    - ansible_facts.services['docker.service']['status'] is defined
+    - ansible_facts.services['docker.service']['state'] == "running"
+    - inventory_hostname in (groups['docker'] | union(groups['kubeadm']) | unique)
+
+- name: docker login
+  tags:
+    - docker
+    - docker-login
+  block:
+    - name: login Repositories
+      community.docker.docker_login:
+        registry_url: "{{ item.registry_url }}"
+        username: "{{ item.username }}"
+        password: "{{ item.password }}"
+        config_path: /root/.docker/config.json
+        reauthorize: true
+      loop: "{{ docker_repositories }}"
+      register: repositories
+
+  rescue:
+    - name: reload error
+      include_tasks: config/login.yml
+      when:
+        - outer_item.failed == true
+        - outer_item.item.insecure == false
+      loop: "{{ repositories.results }}"
+      loop_control:
+        loop_var: outer_item
+
+    - name: copy docker daemon
+      copy:
+        src: "/server/tools/docker/files/daemon.json"
+        remote_src: yes
+        dest: "/etc/docker/daemon.json"
+        owner: root
+        group: root
+        backup: yes
+        mode: 0644
+      notify: restart docker
+    - meta: flush_handlers
+  
+    - name: retry login Repositories
+      community.docker.docker_login:
+        registry_url: "{{ item.registry_url }}"
+        username: "{{ item.username }}"
+        password: "{{ item.password }}"
+        config_path: /root/.docker/config.json
+        reauthorize: true
+      loop: "{{ docker_repositories }}"
+  when:
+    - ansible_facts.services['docker.service']['status'] is defined
+    - ansible_facts.services['docker.service']['state'] == "running"
+    - inventory_hostname in (groups['docker'] | union(groups['kubeadm']) | unique)

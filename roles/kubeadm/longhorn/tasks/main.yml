@@ -1,0 +1,189 @@
+- name: Offline environment longhorn image import
+  tags: 
+    - longhorn
+    - longhorn-image
+  block:
+    - name: Create image storage directory
+      file:
+        path: "/server/tools/{{ role_service_name }}/image"
+        state: directory
+
+    - name: copy image to remote host
+      copy:
+        src: "{{ image_path }}/{{ role_service_name }}/{{ role_service_name }}.{{ image.version }}.tar.gz"
+        dest: "/server/tools/{{ role_service_name }}/image/{{ role_service_name }}.{{ image.version }}.tar.gz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: image load
+      community.docker.docker_image_load:
+        path: "/server/tools/{{ role_service_name }}/image/{{ role_service_name }}.{{ image.version }}.tar.gz"
+  when: network == false
+
+- name: Initialize disk
+  tags: 
+    - longhorn
+    - longhorn-disk-init
+  block:
+    - name: Create a new primary partition
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/longhorn/tasks/disk/init.yml"
+      loop: "{{ service.metadata }}"
+      vars:
+        par_item: "{{ item.disk }}"
+      loop_control:
+        loop_var: item
+  when:
+    - service.disk_init == true
+    - ansible_hostname in item.node
+
+- name: 开启备份 TODO
+  tags: 
+    - longhorn
+    - longhorn-backup
+  block:
+    - name: debug
+      debug:
+        msg: "test"
+    - name: Verify backup s3 secret deploy
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/longhorn/tasks/backup.yml"
+      when: 
+        - service.backup.enabled is defined
+        - service.backup.enabled == true
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when: service.backup.enabled == true
+
+- name: longhron install
+  tags: 
+    - longhorn
+    - longhorn-install
+  block:
+    - name: Create tools storage directory
+      file:
+        path: "/server/tools/longhorn"
+        state: directory
+
+    - name: Add label to node
+      shell: "kubectl label node {{ item.node }} {{ service.lables }} --overwrite"
+      loop: "{{ service.metadata }}"
+      when: 
+        - service.metadata is defined
+        - service.lables != ""
+
+    - name: Add annotate to node
+      shell: "kubectl annotate node {{ item.node }} {{ service.annotate }} --overwrite"
+      loop: "{{ service.metadata }}"
+      when: 
+        - service.metadata is defined
+        - service.lables != ""
+        - service.annotate != ""
+
+    - name: Copy longhorn helm chart file
+      copy:
+        src: "{{ inventory_dir }}/roles/kubeadm/longhorn/files/longhorn-{{ helm_chart.version }}.tgz"
+        dest: "/server/tools/longhorn/longhorn-{{ helm_chart.version }}.tgz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Write template to file
+      template:
+        src: "{{ inventory_dir }}/roles/kubeadm/longhorn/templates/{{ item.src }}.j2"
+        dest: "/server/tools/longhorn/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { src: "values.yml", dest: "values.yml" }
+
+    - name: Deploy longhorn chart from local path
+      kubernetes.core.helm:
+        name: "{{ helm_chart.name }}"
+        chart_ref: "{{ inventory_dir }}/roles/kubeadm/longhorn/files/longhorn-{{ helm_chart.version }}.tgz"
+        release_namespace: "{{ namespace }}"
+        create_namespace: yes
+        values_files:
+          - "/server/tools/longhorn/value.yml"
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+
+- name: expose service longhorn
+  tags: 
+    - longhorn
+    - longhorn-expose
+  block:
+    - name: include_role ingress expose
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ ingress_type }}/tasks/ingress/deploy.yml"
+      vars:
+        args_role_service_name: "{{ role_service_name }}"
+        args_namespace: "{{ namespace }}"
+        args_port: 80
+        args_scheme: "{% if service.ingress.tls.enabled == true %}https{% else %}http{% endif %}"
+        args_domain_name: "longhorn-{{ domain_name_join }}"
+        args_ingress: "{{ service.ingress }}"
+      when: service.expose_type == "ingress"
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - service.expose_type is defined
+    - service.expose_type != ""
+
+- name: longhron test
+  tags: ['longhorn', 'longhorn-test']
+  block:
+    - name: Verify backup s3 secret deploy
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/longhorn/tasks/backup.yml"
+      when: 
+        - service.backup.enabled is defined
+        - service.backup.enabled == true
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+
+- name: longhong-test
+  tags: ['longhorn', 'longhorn-one']
+  block:
+    - name: 定义初始数组
+      set_fact:
+        raid_node: []
+        lvm_node: []
+
+    - name: 获取RAID使用节点
+      set_fact:
+        raid_node: "{{ raid_node + [item.key] | map('regex_replace', raid_regex, raid_replace)}}"
+      loop: "{{ ansible_devices | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      vars:
+        # 磁盘路径
+        name: /dev/
+        # RAID使用磁盘正则匹配规则
+        raid_regex: '^(.*)$'
+        # RAID使用磁盘正则替换（sda）-> (/dev/sda)
+        raid_replace: '{{ name ~ "" ~ "\1" }}'
+      when: item.value.links.masters | length > 0
+      
+    - name: 获取LVM使用节点
+      set_fact:
+        lvm_node: "{{ lvm_node + [item.key] | map('regex_replace', lvm_regex, lvm_replace)}}"
+      loop: "{{ ansible_lvm.pvs | dict2items  }}"
+      vars:
+        # LVM使用磁盘正则匹配
+        lvm_regex: '^(.*)(\d+.*$)'
+        # LVM使用磁盘替换（/dev/sda1）——>(/dev/sda)
+        lvm_replace: '{{ "\1" }}'
+      loop_control:
+        label: "{{ item.key }}"
+    
+    - name: debug
+      debug:
+        msg: "{{ lvm_node | union(raid_node) }}"
+    # - name: Verify test
+    #   debug:
+    #     msg: "{{  ansible_mounts | community.general.json_query('[*].device') | unique }}"
+
+    # - name: Verify test
+    #   debug:
+    #     msg: "{{ ansible_lvm }}"
+  when: 
+    - ansible_hostname in service|community.general.json_query('metadata[*].node')

@@ -1,0 +1,27 @@
+- hosts: kubeadm
+  remote_user: root
+  gather_facts: true
+  roles:
+    - name: kubeadm tools install
+      role: roles/kubeadm/tools
+    - name: pod set timezone
+      role: roles/kubeadm/k8tz
+      tags: never
+    - name: certificate management Tools
+      role: roles/kubeadm/cert-manager
+      tags: never
+    - name: application proxy
+      role: roles/kubeadm/traefik
+      tags: never
+    - name: directpv
+      role: roles/kubeadm/directpv
+      tags: never
+    - name: minio-cluster or minio single
+      role: roles/kubeadm/minio
+      tags: never
+    - name: longhorn
+      role: roles/kubeadm/longhorn
+      tags: never
+    - name: mysql
+      role: roles/kubeadm/mysql
+      tags: never

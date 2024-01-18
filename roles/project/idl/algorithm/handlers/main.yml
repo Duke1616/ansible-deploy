@@ -1,0 +1,9 @@
+---
+- name: restart algorithm
+  docker_compose:
+    project_src: "{{ tempPath }}/algorithm/files"
+    project_name: "{{ project_name }}"
+    restarted: true
+  when: info.exists
+  tags:
+    - algorithm

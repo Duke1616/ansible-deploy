@@ -1,0 +1,4 @@
+role_service_name: directpv
+
+image:
+  version: v3.2.0

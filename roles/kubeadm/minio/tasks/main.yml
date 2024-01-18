@@ -1,0 +1,67 @@
+---
+- name: deploy service minio
+  tags: 
+    - minio
+    - minio-image
+  block:
+    - name: Offline environment minio image import
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/tasks/create/image.yml"
+  when: network == true
+
+- name: deploy service minio-operator
+  tags: 
+    - minio
+    - minio-operator
+  block:
+    - name: install minio-operator
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/tasks/create/operator.yml"
+      vars:
+        deploy_mode: krew
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - service.type is defined
+    - service.type == "cluster"
+
+- name: deploy service minio
+  tags: 
+    - minio
+    - minio-install
+  block:
+    - name: install minio
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/tasks/mode/{{ service.type }}.yml"
+      loop: "{{ service[service.type] }}"
+      loop_control:
+        loop_var: deploy_item
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - deploy_item.pause is defined
+    - deploy_item.pause == false
+
+- name: expose service minio
+  tags: 
+    - minio
+    - minio-expose
+  block:
+    - name: include_role
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ ingress_type }}/tasks/ingress/deploy.yml"
+      vars:
+        args_role_service_name: "{{ role_service_name }}"
+        args_namespace: "{{ ingress_item.namespace }}"
+        args_port: "{% if ingress_item.tls.enabled == true %}9443{% else %}9090{% endif %}"
+        args_scheme: "{% if ingress_item.tls.enabled == true %}https{% else %}http{% endif %}"
+        args_domain_name: "minio-console-{{ ingress_item.name }}-{{ domain_name_join }}"
+        args_ingress: "{{ ingress_item }}"
+        args_ingress_name: minio-console
+        args_retries: 10
+        args_delay: 30
+      loop: "{{ service[service.type] }}"
+      loop_control:
+        loop_var: ingress_item
+      when: service.expose_type == "ingress"
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - service.expose_type is defined
+    - service.expose_type != ""

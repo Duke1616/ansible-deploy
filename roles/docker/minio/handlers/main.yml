@@ -1,0 +1,9 @@
+---
+- name: restart minio
+  docker_compose:
+    project_src: "{{ tempPath }}/minio/files"
+    project_name: "{{ project_name }}"
+    restarted: true
+  when: info.exists
+  tags:
+    - minio

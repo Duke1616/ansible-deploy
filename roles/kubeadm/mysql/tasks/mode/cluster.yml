@@ -1,0 +1,13 @@
+- name: deploy pxc-operator
+  include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/tasks/deploy/pxc-operator.yml"
+  loop: "{{ helm_chart[cluster_type] }}"
+  loop_control:
+    loop_var: cluster_item
+  when: cluster_item.name == "pxc-operator"
+
+- name: deploy pxc-db
+  include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/tasks/deploy/pxc-db.yml"
+  loop: "{{ helm_chart[cluster_type] }}"
+  loop_control:
+    loop_var: cluster_item
+  when: cluster_item.name == "pxc-db"

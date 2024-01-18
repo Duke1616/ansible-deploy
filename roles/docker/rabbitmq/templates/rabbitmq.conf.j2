@@ -1,0 +1,13 @@
+loopback_users.guest = false
+listeners.tcp.default = 5672
+default_vhost = /
+default_user = {{ RABBITMQ_DEFAULT_USERNAME }}
+default_pass = {{ RABBITMQ_DEFAULT_PASSWORD }}
+default_user_tags.administrator = true
+default_permissions.configure = .*
+default_permissions.read = .*
+default_permissions.write = .*
+hipe_compile = false
+management.listener.port = 15672
+management.listener.ssl = false
+# heartbeat = 0

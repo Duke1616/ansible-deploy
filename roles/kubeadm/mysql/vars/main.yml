@@ -1,0 +1,31 @@
+service:
+  # Define the deployment type, cluster, and single node
+  # option: cluster、single
+  type: cluster
+  # External exposure mode, ingress, and nodeport
+  # option: ingress、nodeport
+  expose_type: nodeport
+  cluster:
+    - name: pxc-mysql
+      pause: false
+      namespace: pxc-db
+      capacity: 100Gi
+      service_name: ops-console
+      storageClass: longhorn
+      tls:
+        enabled: False
+        type: cert-manager
+      backup:
+        enabled: True
+        type: s3
+        pitr:
+          enabled: True
+          type: s3
+  s3:
+    tls:
+      enabeld: True
+    endpoints: "https://minio.minio.svc.cluster.local"
+    secrert: minio-secret
+  file:
+    name: longhorn
+    

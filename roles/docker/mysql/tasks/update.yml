@@ -1,0 +1,6 @@
+- name: restart mysql
+  community.docker.docker_compose:
+    project_src: "{{ deploy_path }}"
+    project_name: "{{ deploy_info.project_name }}"
+    env_file: "{{ deploy_path }}/export.sh"
+    restarted: true

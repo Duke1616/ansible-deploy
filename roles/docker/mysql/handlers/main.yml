@@ -1,0 +1,9 @@
+---
+- name: restart mysql
+  docker_compose:
+    project_src: "{{ tempPath }}/mysql/files"
+    project_name: "{{ project_name }}"
+    restarted: true
+  when: info.exists
+  tags:
+    - mysql

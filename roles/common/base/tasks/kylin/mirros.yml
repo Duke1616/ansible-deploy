@@ -1,0 +1,29 @@
+- name: 无网络环境-repo私有源
+  template: 
+    src: "{{ inventory_dir }}/roles/common/base/templates/offline/{{ ansible_distribution.split(' ')[0] | lower }}/{{ item.src }}.j2"
+    dest: "/etc/yum.repos.d/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: "kubernetes.repo", dest: "kubernetes.repo" }
+    - { src: "epel.repo", dest: "epel.repo" }
+    - { src: "kylin_x86_64.repo", dest: "kylin_x86_64.repo" }
+    - { src: "CentOS-Base.repo", dest: "CentOS-Base.repo" }
+    - { src: "docker-ce.repo", dest: "docker-ce.repo" }
+  when: network == false
+
+- name: 有网络环境-repo私有源
+  copy:
+    src: "./files/{{ ansible_distribution.split(' ')[0] | lower }}/{{ item.src }}"
+    dest: "/etc/yum.repos.d/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: 'kubernetes.repo',dest: 'kubernetes.repo' }
+    - { src: 'epel.repo',dest: 'epel.repo' }
+    - { src: 'kylin_x86_64.repo',dest: 'kylin_x86_64.repo' }
+    - { src: 'CentOS-Base.repo',dest: 'CentOS-Base.repo' }
+    - { src: 'docker-ce.repo',dest: 'docker-ce.repo' }
+  when: network == true

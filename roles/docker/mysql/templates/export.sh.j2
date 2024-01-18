@@ -1,0 +1,12 @@
+#jinja2:lstrip_blocks: True
+MYSQL_ROOT_PASSWORD={{ MYSQL_ROOT_PASSWORD }}
+{% if deploy_info.user is none %}
+{% for info in result_user.results %}
+{% set user_pass=info.ansible_facts | dict2items %}
+MYSQL_INIT_USERNAME_{{ info.item.name | upper }}={{ info.item.name }}
+{{ user_pass[0].key }}={{ user_pass[0].value }}
+{% for db in info.item.database %}
+MYSQL_INIT_DATABASE_{{ info.item.name | upper }}_{{ db | upper }}={{ db }}
+{% endfor %}
+{% endfor %}
+{% endif %}

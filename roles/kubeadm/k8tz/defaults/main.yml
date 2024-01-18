@@ -1,0 +1,11 @@
+namespace: k8tz
+role_service_name: k8tz
+
+image:
+  version: v0.9.0
+
+helm_chart:
+  name: k8tz
+  version: v0.9.0
+  timezone: Asia/Shanghai
+  replica_count: 1

@@ -1,0 +1,65 @@
+deployment:
+  enabled: true
+  kind: {{ service.kind }}
+  replicas: 1
+
+ingressClass:
+  # 还没有进行完整的单元测试，pending https://github.com/rancher/helm-unittest/pull/12
+  enabled: true
+  isDefaultClass: false
+
+ingressRoute:
+  dashboard:
+    enabled: false
+
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+    allowExternalNameServices: true
+
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true
+
+#日志相关配置
+logs:
+  general:
+    level: DEBUG
+  access:
+    enabled: true
+
+#端口暴露配置
+ports:
+  web:
+    port: 8000
+    hostPort: 80
+  websecure:
+    port: 8443
+    hostPort: 443
+  metrics:
+    port: 9100
+    hostPort: 9101
+
+#资源限制
+resources:
+  requests:
+    cpu: "100m"
+    memory: "100Mi"
+  limits:
+    cpu: "100m"
+    memory: "100Mi"
+
+#端口暴露方式
+service:
+  enabled: false
+{% if service.allow_master_dispatch == true %}
+tolerations:
+- key: "node-role.kubernetes.io/master"
+  operator: "Equal"
+  effect: "NoSchedule"
+{% endif %}
+{% if service.lables != "" %}
+nodeSelector:
+  {{ service.lables.split('=')[0] }}: {{ service.lables.split('=')[1] }}
+{% endif %}

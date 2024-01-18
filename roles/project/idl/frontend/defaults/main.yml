@@ -1,0 +1,9 @@
+# nginx配置
+nginx_worker_processes: auto
+client_max_body_size: 500M
+
+# 项目相关
+FRONTEND_CONTAINER_NAME: frontend
+FRONTEND_PORT: 8070
+FRONTEND_IMAGE: registry.cn-beijing.aliyuncs.com/ebondmedcore/ebond-database:deploy-3ef7dd07
+FRONTEND_IMAGE_PATH: /mnt/image.tar

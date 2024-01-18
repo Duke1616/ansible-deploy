@@ -1,0 +1,32 @@
+# CentOS-Base.repo
+#
+# The mirror system uses the connecting IP address of the client and the
+# update status of each mirror to pick mirrors that are updated to and
+# geographically close to the client.  You should use this for CentOS updates
+# unless you are manually picking other mirrors.
+#
+# If the mirrorlist= does not work for you, as a fall back you can try the 
+# remarked out baseurl= line instead.
+#
+#
+ 
+[base]
+name=CentOS-8 - Base - mirrors.aliyun.com
+#failovermethod=priority
+baseurl=http://{{ repository_url }}/base-be643a1e920f6036/
+gpgcheck=0
+enabled=1
+ 
+#additional packages that may be useful
+[extras]
+name=CentOS-8 - Extras - mirrors.aliyun.com
+baseurl=http://{{ repository_url }}/extras-548540199a085d8a/
+gpgcheck=0
+enabled=1
+
+[AppStream]
+name=CentOS-8 - AppStream - mirrors.aliyun.com
+#failovermethod=priority
+baseurl=http://{{ repository_url }}/AppStream-bf1daca1ea021975/
+gpgcheck=0
+enabled=1

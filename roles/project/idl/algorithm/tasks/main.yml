@@ -1,0 +1,53 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - algorithm
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - algorithm
+
+- name: Inspect frontend images
+  community.docker.docker_image_info:
+    name:
+     - "{{ ALGORITHM_IMAGE }}"
+  register: result
+  tags:
+    - algorithm
+
+- name: Load frontend image
+  community.docker.docker_image_load:
+    path: /files/mongo.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - algorithm
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ tempPath }}/algorithm/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart algorithm 
+  tags:
+    - algorithm
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ ALGORITHM_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - algorithm
+
+- name: Start algorithm
+  docker_compose:
+    project_src: "{{ tempPath }}/algorithm/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - algorithm

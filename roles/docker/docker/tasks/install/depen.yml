@@ -1,0 +1,9 @@
+- name: Push the libs to the server
+  copy:
+    src: "{{ libs_path }}/docker/docker-pip/"
+    dest: "/server/tools/docker/libs"
+
+- name: Install docker and Docker-Compose libraries
+  command: bash install.sh
+  args:
+    chdir: "/server/tools/docker/libs"

@@ -1,0 +1,37 @@
+---
+- name: 安装ntp
+  tags: ntp
+  block:
+    - set_fact:
+        ntp_server_ipaddr: "{{ hostvars[groups['ntp'][0]].inventory_hostname }}"
+
+    - name: install ntpd
+      include_tasks: "install/{{ ansible_distribution.split(' ')[0] }}.yml"
+
+    - name: copy Ntp Server Conf
+      copy:
+        src: "./files/ntp-server.conf"
+        dest: /etc/ntp.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart ntpd
+      when:
+        - ntp_server_ipaddr == ansible_default_ipv4.address
+    
+    - name: start ntpd
+      service: name=ntpd state=started enabled=yes
+      when: 
+        - ntp_server_ipaddr == ansible_default_ipv4.address
+
+    - name: ntpdate date
+      cron: name="ntpdate" job="ntpdate time1.aliyun.com" minute=0 hour=*/1
+      when: 
+        - network == true
+        - ntp_server_ipaddr != ansible_default_ipv4.address
+
+    - name: ntpdate date
+      cron: name="ntpdate" job="ntpdate {{ ntp_server_ipaddr }}" minute=0 hour=*/1
+      when: 
+        - network == false
+        - ntp_server_ipaddr != ansible_default_ipv4.address

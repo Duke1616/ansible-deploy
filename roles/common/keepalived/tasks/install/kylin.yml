@@ -1,0 +1,6 @@
+- name: yum install keepalived
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - keepalived

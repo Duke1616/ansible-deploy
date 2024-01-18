@@ -1,0 +1,41 @@
+pause: false
+service:
+  # Define the deployment type, cluster, and single node
+  # option: cluster、single
+  type: cluster
+  # External exposure mode, ingress, and nodeport
+  # option: ingress、nodeport
+  expose_type: ingress
+  cluster:
+    - name: ops
+      pause: false 
+      servers: 4
+      volumes: 1
+      capacity: 100Gi
+      namespace: minio
+      service_name: ops-console
+      storageClass: direct-csi-min-io
+      tls:
+        enabled: True
+        # Support Cert manager generated and Custom certificate files
+        # option: cert-manager、custom
+        type: cert-manager
+      extend:
+        enabled: False
+    - name: project
+      pause: false
+      servers: 4
+      volumes: 1
+      capacity: 100Gi
+      namespace: ebondidlrp
+      service_name: project-console
+      storageClass: direct-csi-min-io
+      tls:
+        enabled: False
+        type: cert-manager
+  single: 
+    - name: ""
+      namespace: ""
+      tls:
+        enabled: False
+        type: cert-manager

@@ -1,0 +1,35 @@
+- name: debug
+  debug:
+    msg: "{{ cluster_item }}"
+
+# - name: Create helm deploy directory
+#   file:
+#     path: "/server/tools/{{ role_service_name }}/helm"
+#     state: directory
+
+# - name: Copy pxc-operator helm chart file
+#   copy:
+#     src: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/files/operator-{{ helm_chart.version }}.tgz"
+#     dest: "/server/tools/{{ role_service_name }}/helm/operator/operator-{{ helm_chart.version }}.tgz"
+#     owner: root
+#     group: root
+#     mode: 0644
+
+# - name: Write pxc-operator template to file
+#   template:
+#     src: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/templates/{{ item.src }}.j2"
+#     dest: "/server/tools/{{ role_service_name }}/helm/operator/{{ item.dest }}"
+#     owner: root
+#     group: root
+#     mode: 0644
+#   with_items:
+#     - { src: "operator.yml", dest: "operator.yml" }
+
+# - name: Deploy pxc-operator chart from local path
+#   kubernetes.core.helm:
+#     name: pxc-operator
+#     chart_ref: "/server/tools/{{ role_service_name }}/helm/operator/pxc-operator-{{ helm_chart.version }}.tgz"
+#     release_namespace: pxc-operator
+#     create_namespace: yes
+#     values_files:
+#       - "/server/tools/{{ role_service_name }}/helm/operator/operator.yml"

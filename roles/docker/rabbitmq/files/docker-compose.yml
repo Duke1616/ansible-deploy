@@ -1,0 +1,22 @@
+version: '3'
+services:
+  rabbitmq:
+    restart: always
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+      - ../files/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
+volumes:
+  rabbitmq:
+
+networks:
+  default:
+    external:
+      name: ebond-idl-rp

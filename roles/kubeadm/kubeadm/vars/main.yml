@@ -1,0 +1,21 @@
+recompile_kubeadm: True
+kubeadm_version: v1.23.10
+# docker、containerd
+kubeadm_cri: docker
+
+use_cni_plugin: calico
+kubeadm_cni_plugin:
+  - name: calico
+    version: v3.24.1
+  - name: flannel
+    version: v3.24.1
+
+sysctl_args_conf:
+  - name: net.bridge.bridge-nf-call-ip6tables
+    value: 1
+  - name: net.bridge.bridge-nf-call-iptables
+    value: 1
+  - name: net.ipv4.ip_nonlocal_bind
+    value: 1
+  - name: net.ipv4.ip_forward
+    value: 1

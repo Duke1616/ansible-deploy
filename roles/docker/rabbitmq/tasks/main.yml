@@ -1,0 +1,66 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - rabbitmq
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - rabbitmq
+
+- name: Inspect rabbitmq images
+  community.docker.docker_image_info:
+    name:
+     - "{{ RABBITMQ_IMAGE }}"
+  register: result
+  tags:
+    - rabbitmq
+
+- name: Load rabbitmq image
+  community.docker.docker_image_load:
+    path: /files/rabbitmq.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - rabbitmq
+
+- name: Copy rabbitmq config
+  template:
+    src: rabbitmq.conf.j2
+    dest: "{{ tempPath }}/rabbitmq/files/rabbitmq.conf"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart rabbitmq
+  tags:
+    - rabbitmq
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2 
+    dest: "{{ tempPath }}/rabbitmq/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart rabbitmq
+  tags:
+    - rabbitmq
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ RABBITMQ_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - rabbitmq
+  
+- name: Start rabbitmq
+  docker_compose:
+    project_src: "{{ tempPath }}/rabbitmq/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - rabbitmq
+

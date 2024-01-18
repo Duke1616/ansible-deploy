@@ -1,0 +1,23 @@
+# - name: downlaod vts module
+#   get_url:
+#     url: "http://nginx.org/download/nginx-{{ NGINX_VERSION }}.tar.gz"
+#     dest: /usr/local/src
+#   when: network == true
+
+- name: copy {{ nginx_module_name }} module
+  copy:
+    src: "{{ libs_path }}/nginx/{{ nginx_module_name }}-{{ nginx_module_version }}.{{ nginx_compress_format }}"
+    dest: "/server/tools/nginx/{{ nginx_module_name }}-{{ nginx_module_version }}.{{ nginx_compress_format }}"
+
+- name: unarchive {{ nginx_module_name }} tarball
+  unarchive: 
+    remote_src: yes 
+    src: "/server/tools/nginx/{{ nginx_module_name }}-{{ nginx_module_version }}.{{ nginx_compress_format }}"
+    dest: "/usr/local"
+
+- name: patch upstream_check
+  shell:
+    chdir: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}
+    cmd: patch -p1 < /usr/local/{{ nginx_module_name }}-{{ nginx_module_version }}/check_1.20.1+.patch
+  ignore_errors: True
+  when: nginx_module_name == "nginx_upstream_check_module"

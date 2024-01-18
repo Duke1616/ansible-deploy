@@ -1,0 +1,17 @@
+- name: Pull images from a network environment
+  shell: kubeadm config images pull --config "{{ inventory_dir }}/kubeadm/files/kubeadm.yaml"
+  when:
+    - network == true
+
+- name: Pull a images from an offline environment
+  block:
+    - name: copy kubeadm images
+      copy:
+        src: "{{ libs_path }}/kubeadm/kubeadm.{{ kubeadm_version }}.tar.gz"
+        dest: "/server/tools/kubeadm"
+
+    - name: load images
+      community.docker.docker_image_load:
+        path: "/server/tools/kubeadm/kubeadm.{{ kubeadm_version }}.tar.gz"
+  when:
+    - network == false

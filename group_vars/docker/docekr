@@ -1,0 +1,5 @@
+# 服务存储路径
+server_path: /server/tools
+
+# 镜像地址
+image_path: "/mnt/tools/images"

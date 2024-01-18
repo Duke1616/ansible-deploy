@@ -1,0 +1,35 @@
+---
+- name: System initialization
+  tags: base
+  block:
+    - name: Basic environment initialization
+      include_tasks: base.yml
+  
+    - name: System customization
+      include_tasks: "{{ ansible_distribution.split(' ')[0] | lower }}/base.yml"
+
+- name: System initialization 
+  tags: ['base', 'base-repo']
+  block:
+    - name: Offline environment build private repository
+      # include_tasks: "{{ inventory_dir }}/roles/common/repository/tasks/main.yml"
+      include_role:
+        name: "{{ inventory_dir }}/roles/common/repository"
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['repo'][0]].inventory_hostname }}"
+  when: 
+    - network == false
+
+- name: include mirros
+  tags: ['base', 'base-mirros']
+  block:
+    - name: repository url
+      set_fact:
+        # 192.168.43.20:9898/repository/kylin/V10/x86_64
+        repository_url:
+          "{{ hostvars[groups['repo'][0]].inventory_hostname
+          }}:9898/{{ ansible_distribution.split(' ')[0] | lower
+          }}/{{ ansible_distribution_version }}/{{ ansible_machine }}"
+
+    - name: include mirrors
+      include_tasks: "{{ ansible_distribution.split(' ')[0] | lower }}/mirros.yml"

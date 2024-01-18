@@ -1,0 +1,6 @@
+- name: yum install chrony
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - chrony

@@ -1,0 +1,21 @@
+- name: Create krew deploy directory
+  file:
+    path: "/server/tools/{{ role_service_name }}/krew"
+    state: directory
+
+- name: copy plugin directpv
+  copy:
+    src: "{{ libs_path }}/kubeadm/krew/plugin/{{ role_service_name }}/{{ item.src }}"
+    dest: "/server/tools/{{ role_service_name }}/krew/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - { src: "kubectl-directpv_linux_amd64.zip", dest: "kubectl-directpv_linux_amd64.zip" }
+    - { src: "directpv.yml", dest: "directpv.yml" }
+
+- name: krew install plugin in directpv
+  shell: "source  /etc/profile.d/krew.sh;
+    kubectl krew install --manifest=/server/tools/{{ role_service_name }}/krew/directpv.yml
+    --archive=/server/tools/{{ role_service_name }}/krew/kubectl-directpv_linux_amd64.zip
+  "

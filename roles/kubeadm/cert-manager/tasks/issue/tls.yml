@@ -1,0 +1,16 @@
+- name: Write cert-manager template to file
+  template:
+    src: "{{ inventory_dir }}/roles/kubeadm/cert-manager/templates/issue/{{ item.src }}.j2"
+    dest: "/server/tools/{{ role_service_name }}/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: "tls.yml", dest: "{{ args_ingress.name }}-tls.yml" }
+
+- name: Create tls certificate issuer
+  kubernetes.core.k8s:
+    state: present
+    src: "/server/tools/{{ args_role_service_name }}/{{ item.src }}"
+  with_items:
+    - { src: "{{ args_ingress.name }}-tls.yml" }

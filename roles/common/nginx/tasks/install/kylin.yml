@@ -1,0 +1,14 @@
+- name: yum install nginx libs
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - gcc
+    - gcc-c++
+    - pcre
+    - pcre-devel
+    - zlib
+    - zlib-devel
+    - openssl
+    - openssl-devel
+    - patch

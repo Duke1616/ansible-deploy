@@ -1,0 +1,39 @@
+- name: Offline environment minio image import
+  block:
+    - name: Create tools storage directory
+      file:
+        path: "/server/tools/{{ role_service_name }}/image"
+        state: directory
+
+    - name: copy image to remote host
+      copy:
+        src: "{{ image_path }}/{{ role_service_name }}/{{ role_service_name }}.{{ image.version }}.tar.gz"
+        dest: "/server/tools/minio/image/{{ role_service_name }}.{{ image.version }}.tar.gz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: image load
+      community.docker.docker_image_load:
+        path: "/server/tools/minio/image/{{ role_service_name }}.{{ image.version }}.tar.gz"
+
+- name: Offline environment minio operator image import
+  block:
+    - name: Create tools storage directory
+      file:
+        path: "/server/tools/{{ role_service_name }}/image"
+        state: directory
+
+    - name: copy image to remote host
+      copy:
+        src: "{{ image_path }}/{{ role_service_name }}/{{ role_service_name }}-operator.{{ operator.version }}.tar.gz"
+        dest: "/server/tools/minio/image/{{ role_service_name }}-operator.{{ operator.version }}.tar.gz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: image load
+      community.docker.docker_image_load:
+        path: "/server/tools/minio/image/{{ role_service_name }}-operator.{{ operator.version }}.tar.gz"
+  when: 
+    - service.type == "cluster"

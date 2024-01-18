@@ -1,0 +1,29 @@
+# 系统自建服务
+- name: 变量重置
+  set_fact:
+    args_service: "{{ service }}"
+
+- name: 系统自建的服务
+  include_role:
+    name: "{{ inventory_dir }}/roles/kubeadm/minio"
+    tasks_from: "{{ inventory_dir }}/roles/kubeadm/minio/tasks/system.yml"
+  when: service.backup.type == "system"
+
+- name: debug 
+  debug:
+    msg: "{{ network }}"
+
+- name: Write template to file
+  template:
+    src: "{{ inventory_dir }}/roles/kubeadm/longhorn/templates/secret/{{ item.src }}.j2"
+    dest: "/server/tools/longhorn/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - { src: "{{ service.backup.type }}.yml", dest: "backup-secret.yml" }
+
+- name: Create s3 backup storage Secret
+  kubernetes.core.k8s:
+    state: present
+    src: "/server/tools/longhorn/backup-secret.yml"

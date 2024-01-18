@@ -1,0 +1,11 @@
+#jinja2:lstrip_blocks: True 
+upstream kubeadm {
+{% for master in groups['master'] -%}
+    server {{ master }}:6443;
+{% endfor %}
+}
+server {
+    listen 16443;
+    proxy_timeout 20s;
+    proxy_pass kubeadm;
+}

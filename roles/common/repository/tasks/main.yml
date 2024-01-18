@@ -1,0 +1,65 @@
+- name: Deploy local repository source
+  tags: repo
+  block:  
+    - name: create directory
+      file:
+        path: "{{ libs_path }}"
+        state: directory
+ 
+    - name: copy repository mirros
+      copy:
+        src: "{{ libs_path }}/{{ item.src }}"
+        dest: "{{ libs_path }}/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { src: "repo.tar.gz", dest: "repo.tar.gz" }
+
+    - name: unarchive tarball
+      unarchive:
+        remote_src: yes
+        src: "{{ libs_path }}/repo.tar.gz"
+        dest: "{{ libs_path }}"
+
+    - name: repo 
+      include_tasks: "{{ ansible_distribution.split(' ')[0] | lower }}/repo.yml"
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['repo'][0]].inventory_hostname }}"
+
+- name: repo proxy expose
+  tags: ['repo', 'repo-proxy']
+  block:
+    - name: Populate service facts
+      service_facts:
+
+    - name: include nginx
+      # include_tasks: "{{ inventory_dir }}/roles/common/nginx/tasks/main.yml"
+      include_role:
+        name: "{{ inventory_dir }}/roles/common/nginx"
+      when: 
+        - ansible_facts.services['nginx.service']['status'] is undefined
+
+    - name: copy nginx.conf
+      template:
+        src: "{{ inventory_dir }}/roles/common/repository/templates/proxy/repo.conf.j2"
+        dest: /usr/local/nginx/conf/conf.d/repo.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart nginx
+    - meta: flush_handlers
+
+    - name: Monitor the 9898 port until the waiting timeout
+      wait_for:
+        port: 9898
+        delay: 2
+        timeout: 30
+        state: started
+
+    - name: rm repo list
+      shell: rm -f /etc/yum.repos.d/*
+      when: 
+        - ansible_facts.services['nginx.service']['status'] is undefined
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['repo'][0]].inventory_hostname }}"

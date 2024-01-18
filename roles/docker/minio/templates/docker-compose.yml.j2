@@ -1,0 +1,27 @@
+version: '3'
+services:
+  {{ MINIO_CONTAINER_NAME }}:
+    restart: always
+    image: {{ MINIO_IMAGE }}
+    container_name: {{ MINIO_CONTAINER_NAME }}
+    ports:
+      - {{ MINIO_API_PORT }}:9000
+      - {{ MINIO_CONSOLE_PORT }}:9001
+    environment:
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+      MINIO_ACCESS_KEY: {{ MINIO_ACCESS_KEY }}
+      MINIO_SECRET_KEY: {{ MINIO_SECRET_KEY }}
+    command: server --console-address ':9001' --address ':9000' /data
+    volumes:
+      - {{ MINIO_CONTAINER_NAME }}:/data
+      - ../files/localtime:/etc/localtime 
+
+volumes:
+  {{ MINIO_CONTAINER_NAME }}:
+
+networks:
+  default:
+    external:
+      name: {{ DOCKER_NETWORK }}
+

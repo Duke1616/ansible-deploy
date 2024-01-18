@@ -1,0 +1,20 @@
+version: '3'
+services:
+  frontend:
+    restart: always
+    image: registry.cn-beijing.aliyuncs.com/ebondmedcore/ebond-database:deploy-3ef7dd07
+    container_name: frontend
+    ports:
+      - 8070:80
+    environment:
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+    volumes:
+      - ../files/nginx.conf:/etc/nginx/nginx.conf
+      - ../files/ebond-idl-rp.conf:/etc/nginx/conf.d/default.conf
+
+networks:
+  default:
+    external:
+      name: ebond-idl-rp
+

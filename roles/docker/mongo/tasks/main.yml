@@ -1,0 +1,54 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - mongo
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - mongo
+
+- name: Inspect mongo images
+  community.docker.docker_image_info:
+    name:
+     - "{{ MONGO_IMAGE }}"
+  register: result
+  tags:
+    - mongo
+
+- name: Load MongoDB image
+  community.docker.docker_image_load:
+    path: /files/mongo.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - mongo
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2 
+    dest: "{{ tempPath }}/mongo/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart mongo
+  tags:
+    - mongo
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ MONGO_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - mongo
+  
+- name: Start MongoDB
+  docker_compose:
+    project_src: "{{ tempPath }}/mongo/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - mongo
+

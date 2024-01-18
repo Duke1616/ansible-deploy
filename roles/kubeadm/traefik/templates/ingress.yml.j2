@@ -1,0 +1,40 @@
+#jinja2:lstrip_blocks: True 
+{% if args_ingress.tls.enabled == true -%}
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: {{ args_ingress.name }}
+  namespace: {{ args_namespace }}
+spec:
+  serverName: {{ args_domain_name }}
+  insecureSkipVerify: true
+{% endif -%}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ args_ingress.service_name }}
+  namespace: {{ args_namespace }}
+spec:
+  entryPoints:
+    {% if args_ingress.tls.enabled == true %}
+    - websecure
+    {% else %}
+    - web
+    {% endif %}
+  routes:
+  - kind: Rule
+    match: Host(`{{ args_domain_name }}`)
+    services:
+    - kind: Service
+      name: {{ args_ingress.service_name }}
+      namespace: {{ args_namespace }}
+      port: {{ args_port }}
+      responseForwarding:
+        flushInterval: 1ms
+      scheme: {{ args_scheme }}
+{% if args_ingress.tls.enabled == true %}
+      serversTransport: {{ args_ingress.name }}
+  tls:
+    secretName: {{ args_domain_name }}
+{% endif %}

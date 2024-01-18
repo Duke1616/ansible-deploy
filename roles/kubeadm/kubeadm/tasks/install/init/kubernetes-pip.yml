@@ -1,0 +1,10 @@
+- name: copy kubernetes pip libs
+  copy:
+    src: "{{ libs_path }}/kubeadm/kubernetes-pip"
+    dest: "/server/tools/kubeadm/libs"
+
+- name: install kubernetes pip libs
+  command: bash install.sh
+  args:
+    chdir: "/server/tools/kubeadm/libs/kubernetes-pip"
+

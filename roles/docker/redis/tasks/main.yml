@@ -1,0 +1,66 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - redis
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - redis
+
+- name: Inspect redis images
+  community.docker.docker_image_info:
+    name:
+     - "{{ REDIS_IMAGE }}"
+  register: result
+  tags:
+    - redis
+
+- name: Load Redis image
+  community.docker.docker_image_load:
+    path: /files/redis.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - redis
+
+- name: Copy Redis config
+  template:
+    src: redis.conf.j2
+    dest: "{{ tempPath }}/redis/files/redis.conf"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart redis
+  tags:
+    - redis
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2 
+    dest: "{{ tempPath }}/redis/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart redis
+  tags:
+    - redis
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ REDIS_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - redis
+  
+- name: Start Redis
+  docker_compose:
+    project_src: "{{ tempPath }}/redis/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - redis
+

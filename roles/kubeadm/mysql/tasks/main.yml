@@ -1,0 +1,10 @@
+- name: pxc install 
+  tags: ['mysql', 'pxc-install']
+  block:
+    - name: include tasks deploy mysql
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/tasks/mode/{{ service.type }}.yml"
+      loop: "{{ service.cluster }}"
+      loop_control:
+        loop_var: deploy_item
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"

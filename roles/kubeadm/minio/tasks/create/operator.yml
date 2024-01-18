@@ -1,0 +1,122 @@
+- name: krew install mode
+  block:
+    - name: Create krew deploy directory
+      file:
+        path: "/server/tools/{{ role_service_name }}/krew"
+        state: directory
+
+    - name: copy plugin minio
+      copy:
+        src: "{{ libs_path }}/kubeadm/krew/plugin/{{ role_service_name }}/{{ item.src }}"
+        dest: "/server/tools/{{ role_service_name }}/krew/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: 0755
+      with_items:
+        - { src: "kubectl-minio_linux_amd64.zip", dest: "kubectl-minio_linux_amd64.zip" }
+        - { src: "minio.yml", dest: "minio.yml" }
+
+    - name: krew install plugin in minio
+      shell: "source /etc/profile.d/krew.sh;
+        kubectl krew install --manifest=/server/tools/{{ role_service_name }}/krew/minio.yml
+        --archive=/server/tools/{{ role_service_name }}/krew/kubectl-minio_linux_amd64.zip
+      "
+
+    - name: deploy install minio-operator
+      shell: "source /etc/profile.d/krew.sh;kubectl minio init"
+  when: deploy_mode|default("helm") == "krew"
+
+- name: helm install mode
+  block:
+    - name: Create helm deploy directory
+      file:
+        path: "/server/tools/{{ role_service_name }}/helm"
+        state: directory
+
+    - name: Copy minio-operator helm chart file
+      copy:
+        src: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/files/operator-{{ helm_chart.version }}.tgz"
+        dest: "/server/tools/{{ role_service_name }}/helm/operator/operator-{{ helm_chart.version }}.tgz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Write minio-operator template to file
+      template:
+        src: "{{ inventory_dir }}/roles/kubeadm/{{ role_service_name }}/templates/{{ item.src }}.j2"
+        dest: "/server/tools/{{ role_service_name }}/helm/operator/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { src: "operator.yml", dest: "operator.yml" }
+
+    - name: Deploy minio-operator chart from local path
+      kubernetes.core.helm:
+        name: minio-operator
+        chart_ref: "/server/tools/{{ role_service_name }}/helm/operator/operator-{{ helm_chart.version }}.tgz"
+        release_namespace: minio-operator
+        create_namespace: yes
+        values_files:
+          - "/server/tools/{{ role_service_name }}/helm/operator/operator.yml"
+  when: deploy_mode|default("helm") == "helm"
+
+- name: expose service minio-operator
+  block:
+    - name: include_role ingress expose
+      include_tasks: "{{ inventory_dir }}/roles/kubeadm/{{ ingress_type }}/tasks/ingress/deploy.yml"
+      vars:
+        args_role_service_name: "{{ role_service_name }}"
+        args_namespace: minio-operator
+        args_port: 9090
+        args_scheme: http
+        args_domain_name: "minio-operator-{{ domain_name_join }}"
+        args_ingress: "{{ operator.ingress }}"
+      when: service.expose_type == "ingress"
+  run_once: yes
+  delegate_to: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+  when:
+    - service.expose_type is defined
+    - service.expose_type != ""
+
+- name: Customize certificate authentication
+  block:
+    - name: minio-operator ca 
+      shell: kubectl get secrets -n minio-operator operator-ca-tls -o=jsonpath='{.data.ca\.crt}' | base64 -d
+      register: _result_operator
+      
+    - name: cert-manager ca 
+      shell: kubectl get secrets -n cert-manager ca-tls -o=jsonpath='{.data.ca\.crt}' | base64 -d
+      register: _result_cert_manager
+
+    - name: diff ca Certificates
+      debug:
+        msg: "{{ _result_cert_manager }} {{  _result_operator.stdout }}"
+      failed_when: true
+      when:
+        - _result_cert_manager.stdout == ""
+        - _result_operator.stdout == ""
+        - _result_cert_manager.stdout !=  _result_operator.stdout
+  rescue:
+    - name: write ca.crt to file
+      copy:
+        dest: /server/tools/minio/ca.crt
+        content: "{{ _result_cert_manager.stdout }}\n"
+      when: _result_cert_manager.stdout != ""
+
+    - name: delete secret
+      shell: "kubectl delete secret operator-ca-tls -n minio-operator"
+      failed_when: false
+      
+    # TODO delete secret       
+    - name: create secret
+      shell: "
+        cd /server/tools/minio/;
+        kubectl create secret generic operator-ca-tls --from-file=ca.crt -n minio-operator
+      "
+
+    - name: rollout minio operator
+      shell: kubectl rollout restart deployment.apps/minio-operator -n minio-operator
+  when:
+    - service.expose_type is defined
+    - service.expose_type != ""

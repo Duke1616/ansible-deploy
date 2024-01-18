@@ -1,0 +1,37 @@
+- name: include 
+  include_tasks: "{{ inventory_dir }}/roles/docker/docker/tasks/config/init.yml"
+
+- name: modify docker gpu daemon.json
+  set_fact:
+    imported_json: "{{ imported_json | combine(item, recursive=True)}}"
+  loop:
+    - {
+        "exec-opts": [
+            "native.cgroupdriver=cgroupfs"
+        ]
+      }
+
+- name: write updated daemon.json to file
+  copy:
+    content: "{{ imported_json | to_nice_json }}"
+    dest: "/server/tools/docker/files/daemon.json"
+
+- name: copy docker daemon
+  copy:
+    remote_src: yes
+    src: "/server/tools/docker/files/daemon.json"
+    dest: "/etc/docker/daemon.json"
+    owner: root
+    group: root
+    backup: yes
+    mode: 0644
+  notify: restart docker
+- meta: flush_handlers
+
+- name: copy kubelet conf modify args driver
+  copy:
+    src: "{{ inventory_dir }}/roles/kubeadm/kubeadm/files/kubelet/kubeadm-flags.env"
+    dest: /var/lib/kubelet/kubeadm-flags.env
+    mode: 0644
+  notify: restart kubelet
+- meta: flush_handlers

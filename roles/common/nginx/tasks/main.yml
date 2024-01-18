@@ -1,0 +1,107 @@
+- name: Populate service facts
+  service_facts:
+  tags: ['nginx', 'nginx-install', 'nginx-upgrade']
+
+- name: install nginx
+  tags: ['nginx', 'nginx-install']
+  block:
+    - name: Populate service facts
+      service_facts:
+  
+    - name: Install nginx dependency
+      include_tasks: "install/{{ ansible_distribution.split(' ')[0] | lower }}.yml"
+
+    - name: Create nginx Group
+      group: name=nginx system=yes
+  
+    - name: Create nginx User
+      user: name=nginx group=nginx shell=/sbin/nologin system=yes
+
+    - name: create nginx directory
+      file:
+        path: "/server/tools/nginx/conf"
+        state: directory
+
+    - name: copy configure conf
+      template:
+        src: "{{ inventory_dir }}/roles/common/nginx/templates/configure.sh.j2"
+        dest: "/server/tools/nginx/conf/configure.sh"
+        owner: root
+        group: root
+        backup: yes
+        mode: 0644
+
+    - name: Add nginx modules
+      include_tasks: "{{ inventory_dir }}/roles/common/nginx/tasks/module.yml"
+      loop: "{{ nginx_modules_tasks }}"
+      vars:
+        nginx_module_name: "{{ item.name }}"
+        nginx_module_version: "{{ item.version }}"
+        nginx_compress_format: "{{ item.compress_format }}"
+
+    - name: Configure
+      command: bash /server/tools/nginx/conf/configure.sh
+      args:
+        chdir: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}
+
+    - name: make
+      command: make
+      args:
+        chdir: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}
+
+    - name: make install
+      command: make install
+      args:
+        chdir: /usr/local/nginx-{{ nginx_modules_tasks[0].version }}
+  when:
+    - ansible_facts.services['nginx.service']['status'] is undefined
+    - nginx_setup | default("install") == "install"
+
+- name: nginx upgrade
+  tags: ['never', 'nginx-upgrade']
+  block:
+    - name: View nginx version
+      shell: nginx -V 2>&1|awk -F '/' 'NR==1{print $2}'
+      register: nginx_version
+
+    - name: Check whether the version has changed
+      include_tasks: "{{ inventory_dir }}/roles/common/nginx/tasks/upgrade.yml"
+      when:
+        - nginx_version.stdout is undefined
+        - nginx_version.stdout != nginx_modules_tasks[0].version
+  when:
+    - ansible_facts.services['nginx.service']['source'] | default("none") == "systemd"
+    - nginx_setup | default("none") == "upgrade"
+
+- name: nginx config
+  tags: ['nginx', 'nginx-conf']
+  block:
+    - name: Add Nginx to system-wide $PATH.
+      copy:
+        dest: /etc/profile.d/nginx-path.sh
+        content: |-
+          export PATH=$PATH:/usr/local/nginx/sbin
+
+    - name: Copy Nginx System Service
+      copy:
+        src: "{{ inventory_dir }}/roles/common/nginx/files/{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { src: "nginx.service", dest: "/usr/lib/systemd/system/nginx.service" }
+        - { src: "nginx.conf", dest: "/usr/local/nginx/conf/nginx.conf" }
+      notify:
+        - reload nginx
+
+    - name: create directory
+      file:
+        path: /usr/local/nginx/conf/{{ item }}
+        state: directory
+      with_items:
+        - conf.d 
+        - tcpconf
+
+    - name: start nginx
+      service: name=nginx state=started enabled=yes

@@ -1,0 +1,244 @@
+version: '3'
+services:
+  backend:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}
+    image: {{ BACKEND_IMAGE }}
+    command: /bin/bash -c /usr/src/backend/deploy/start_backend_server.sh
+    ports:
+      - {{ BACKEND_PORT }}:8000
+    volumes:
+      - {{ BACKEND_STATIC_VOLUME }}:/usr/src/backend/static/
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+  backend_timing:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}_timing
+    image: {{ BACKEND_IMAGE }}
+    command: python manage.py runserver
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+  rabbitmq_client1:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}_rabbitmq
+    image: {{ BACKEND_IMAGE }}
+    command: /bin/bash -c /usr/src/backend/deploy/start_rabbitmq_client.sh
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+  rabbitmq_client2:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}_rabbitmq2
+    image: {{ BACKEND_IMAGE }}
+    command: /bin/bash -c /usr/src/backend/deploy/start_rabbitmq_client2.sh
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+  celery:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}_celery
+    image: {{ BACKEND_IMAGE }}
+    command: /bin/bash -c /usr/src/backend/deploy/start_celery_server.sh
+    volumes:
+      - {{ BACKEND_STATIC_VOLUME }}:/usr/src/backend/static/
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+  celery_task_result:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}_celery_task_result
+    image: {{ BACKEND_IMAGE }}
+    command: /bin/bash -c /usr/src/backend/deploy/start_celery_task_result.sh
+    ports:
+      - {{ BACKEND_CELERY_TASK_PORT }}:5555
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+  websocket:
+    restart: always
+    container_name: {{ BACKEND_CONTAINER_NAME  }}_websocket
+    image: {{ BACKEND_IMAGE }} 
+    command: python /usr/src/backend/mywebsocket/main.py
+    ports:
+      - {{ BACKEND_WEBSOCKET_PORT }}:5679
+    environment:
+      - COLUMNS=80
+      - TZ=Asia/Shanghai
+      - ENVIRONMENT=development
+      - MYSQL_USER={{ MYSQL_SERVICE_USERNAME }}
+      - MYSQL_PASSWORD={{ MYSQL_SERVICE_PASSWORD }}
+      - MYSQL_HOST={{ MYSQL_SERVICE_HOST }}
+      - MYSQL_DATABASE={{ MYSQL_SERVICE_DATABASE }}
+      - MYSQL_PORT={{ MYSQL_SERVICE_PORT }}
+      - RABBITMQ_HOST={{ RABBITMQ_SERVICE_HOST }}
+      - RABBITMQ_PORT={{ RABBITMQ_SERVICE_PORT }}
+      - RABBITMQ_USER={{ RABBITMQ_SERVICE_USERNAME }}
+      - RABBITMQ_PASSWORD={{ RABBITMQ_SERVICE_PASSWORD }}
+      - REDIS_HOST={{ REDIS_SERVICE_HOST }}
+      - REDIS_PORT={{ REDIS_SERVICE_PORT }}
+      - REDIS_PASSWORD={{ REDIS_SERVICE_PASSWORD }}
+      - MinIO_OCR_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MinIO_OCR_ACCESS_KEY={{ MINIO_SERVICE_ACCESS_KEY }}
+      - MinIO_OCR_SECRET_KEY={{ MINIO_SERVICE_SECRET_KEY }}
+      - MinIO_OCR_BUCKET={{ MINIO_SERVICE_BUCKET }}
+      - MinIO_OCR_Public_ENDPOINT={{ MINIO_SERVICE_ENDPOINT }}
+      - MONGO_USERNAME={{ MONGO_SERVICE_USERNAME }}
+      - MONGO_PASSWORD={{ MONGO_SERVICE_PASSWORD }}
+      - MONGO_HOST={{ MONGO_SERVICE_HOST }}
+      - MONGO_PORT={{ MONGO_SERVICE_PORT }}
+      - MONGO_DB={{ MONGO_SERVICE_DATABASE }}
+      - SECURE=False
+
+volumes:
+  {{ BACKEND_STATIC_VOLUME }}:
+
+networks:
+  default:
+    external:
+      name: {{ DOCKER_NETWORK }}

@@ -1,0 +1,82 @@
+---
+- name: pre system facts
+  tags: 
+    - mysql
+    - mysql-image
+    - mysql-install
+  block:
+    - name: Obtaining Deployment Information
+      set_fact:
+        deploy_info: "{{ item }}"
+      vars:
+        query_uuid: "[?uuid=='{{ deploy_uuid }}']"
+        deploy_temp: "{{ service | community.general.json_query(query_uuid) }}"
+      loop: "{{ deploy_temp }}"
+      loop_control:
+        label: "{{ item.uuid }}"
+      when: deploy_temp | length == 1
+      # failed_when: deploy_temp | length != 1
+
+    # 先判断UUID是否有重复产生冲突、在进行判断定义主机是否存在Docker组中
+    - name: The UUID definition is repeated
+      assert:
+        that:
+          - deploy_info.host in groups['docker']
+        fail_msg: "The host does not exist"
+        success_msg: "successful"
+      run_once: yes
+      delegate_to: "{{ deploy_info.host }}"
+
+    # TODO 判断安装Docker、以及相关的depend
+    # - name: Populate service facts
+    #   service_facts:
+
+    - name: deploy_path
+      set_fact:
+        deploy_path: "{{ server_path }}/{{ deploy_info.project_name }}/{{ deploy_info.environment}}/mysql"
+
+- name: Offline environment mysql image import
+  tags: 
+    - mysql
+    - mysql-image
+  block:
+    - name: Create image storage directory
+      file:
+        path: "{{ server_path }}/mysql/image"
+        state: directory
+
+    - name: copy image to remote host
+      copy:
+        src: "{{ image_path }}/mysql/mysql.{{ deploy_info.version }}.tar.gz"
+        dest: "{{ server_path }}/mysql/image/mysql.{{ deploy_info.version }}.tar.gz"
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: image load
+      community.docker.docker_image_load:
+        path: "{{ server_path }}/mysql/image/mysql.{{ deploy_info.version }}.tar.gz"
+  run_once: yes
+  delegate_to: "{{  deploy_info.host }}"
+  when:
+    - network == false
+
+- name: install mysql
+  tags:
+    - mysql
+    - mysql-install
+  block:
+    - name: Configuration Verification
+      stat:
+        path: "{{ deploy_path }}/docker-compose.yaml"
+      register: stat_result
+
+    - name: install mysql
+      include_tasks: "{{ inventory_dir }}/roles/docker/mysql/tasks/install.yml"
+      when: not stat_result.stat.exists
+
+    - name: update mysql
+      include_tasks: "{{ inventory_dir }}/roles/docker/mysql/tasks/update.yml"
+      when: stat_result.stat.exists == true
+  run_once: yes
+  delegate_to: "{{  deploy_info.host }}"

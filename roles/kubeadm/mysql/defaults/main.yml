@@ -1,0 +1,12 @@
+role_service_name: mysql
+image:
+  version: v8.0.28
+
+cluster_type: pxc
+helm_chart:
+  pxc:
+    - name: pxc-operator
+      version: 1.11.1
+    - name: pxc-db
+      version: 1.11.5
+      config:

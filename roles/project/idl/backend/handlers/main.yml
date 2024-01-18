@@ -1,0 +1,9 @@
+---
+- name: restart backend
+  docker_compose:
+    project_src: "{{ tempPath }}/backend/files"
+    project_name: "{{ project_name }}"
+    restarted: true
+  when: info.exists
+  tags:
+    - backend

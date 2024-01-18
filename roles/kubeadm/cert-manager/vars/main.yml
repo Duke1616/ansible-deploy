@@ -1,0 +1,10 @@
+service:
+  name: cert-manager
+  allow_master_dispatch: false
+  type: comstom
+  ACME:
+    HTTP-01:
+    DNS-01:
+  comstom:
+    ca: 
+    duration: 

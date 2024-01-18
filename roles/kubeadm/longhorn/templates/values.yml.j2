@@ -1,0 +1,301 @@
+# Default values for longhorn.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  cattle:
+    systemDefaultRegistry: ""
+    windowsCluster:
+      # Enable this to allow Longhorn to run on the Rancher deployed Windows cluster
+      enabled: false
+      # Tolerate Linux node taint
+      tolerations:
+      - key: "cattle.io/os"
+        value: "linux"
+        effect: "NoSchedule"
+        operator: "Equal"
+      # Select Linux nodes
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      # Recognize toleration and node selector for Longhorn run-time created components
+      defaultSetting:
+        taintToleration: cattle.io/os=linux:NoSchedule
+        systemManagedComponentsNodeSelector: kubernetes.io/os:linux
+
+image:
+  longhorn:
+    engine:
+      repository: longhornio/longhorn-engine
+      tag: {{ image.version }}
+    manager:
+      repository: longhornio/longhorn-manager
+      tag: {{ image.version }}
+    ui:
+      repository: longhornio/longhorn-ui
+      tag: {{ image.version }}
+    instanceManager:
+      repository: longhornio/longhorn-instance-manager
+      tag: v1_20221003
+    shareManager:
+      repository: longhornio/longhorn-share-manager
+      tag: v1_20221003
+    backingImageManager:
+      repository: longhornio/backing-image-manager
+      tag: v3_20221003
+  csi:
+    attacher:
+      repository: longhornio/csi-attacher
+      tag: v3.4.0
+    provisioner:
+      repository: longhornio/csi-provisioner
+      tag: v2.1.2
+    nodeDriverRegistrar:
+      repository: longhornio/csi-node-driver-registrar
+      tag: v2.5.0
+    resizer:
+      repository: longhornio/csi-resizer
+      tag: v1.2.0
+    snapshotter:
+      repository: longhornio/csi-snapshotter
+      tag: v3.0.3
+  pullPolicy: IfNotPresent
+
+service:
+  ui:
+    type: ClusterIP
+    nodePort: null
+  manager:
+    type: ClusterIP
+    nodePort: ""
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: ""
+
+persistence:
+  defaultClass: true
+  defaultFsType: ext4
+  defaultClassReplicaCount: 3
+  defaultDataLocality: disabled # best-effort otherwise
+  reclaimPolicy: Delete
+  migratable: false
+  recurringJobSelector:
+    enable: false
+    jobList: []
+  backingImage:
+    enable: false
+    name: ~
+    dataSourceType: ~
+    dataSourceParameters: ~
+    expectedChecksum: ~
+
+csi:
+  kubeletRootDir: ~
+  attacherReplicaCount: ~
+  provisionerReplicaCount: ~
+  resizerReplicaCount: ~
+  snapshotterReplicaCount: ~
+
+defaultSettings:
+  # 用于备份的目标器。支持NFS和S3协议
+  backupTarget: s3://backupbucket@us-east-1/longhorn
+  # 使用的secret
+  backupTargetCredentialSecret: longhorn-s3-secret
+  # 如果启用了该设置，Longhorn会自动附加卷，并在需要重复执行快照/备份时进行快照/备份
+  allowRecurringJobWhileVolumeDetached: false
+  # 创建带有节点标签的默认磁盘
+  createDefaultDiskLabeledNodes: true
+  # 主机上数据存储的默认路径
+  defaultDataPath: /data/longhorn
+  # 该设置指定从Longhorn UI创建卷时的默认数据位置 
+  defaultDataLocality: disabled
+  # 选中此设置后，Longhorn Manager将允许在具有相同卷的现有健康副本的节点上调度 
+  replicaSoftAntiAffinity: false
+  # 当发现可用节点时自动重新平衡副本
+  replicaAutoBalance: disabled
+  # 超额供应百分比定义了相对于硬盘容量可以分配多少存储空间
+  # 意味着可以把一块300G的longhorn volume 调度到一个只有150G存储空间的节点上
+  storageOverProvisioningPercentage: 300
+  # 只有在从可用磁盘空间(Storage available)中减去磁盘空间量，并且可用磁盘空间仍然超过实际磁盘容量(Storage Maximum)的25%之后，Longhorn Manager才允许调度新的副本
+  storageMinimalAvailablePercentage: 15
+  # 定期检查可更新版本
+  upgradeChecker: false
+  # 从Longhorn用户界面创建卷时默认的副本数量
+  # 如果有大于3个节点选择3, 否则为2
+  {% if service.metadata is defined -%}
+    {% if service.metadata|length >= 3 -%}
+    defaultReplicaCount: 3
+    {% else -%}
+    defaultReplicaCount: 2
+    {% endif -%}
+  {% else -%}
+  defaultReplicaCount: 2
+  {% endif -%}
+  # 于为现有的Longhorn卷创建PV/PVC时持久化卷(PV)和持久化卷声明(PVCs)
+  defaultLonghornStaticStorageClass: longhorn-static
+  # 以秒为单位轮询备份存储更新卷的“Last backup”字段
+  backupstorePollInterval: 500
+  # 污点容忍
+  #taintToleration: key1=value1:NoSchedule; key2:NoExecute
+  ## 如果希望限制Longhorn组件只能在特定的节点集上运行，可以为所有Longhorn组件设置node-selector
+  ## systemManagedComponentsNodeSelector: "key:value"
+  {% if service.lables != "" and service.lables is defined -%}
+  systemManagedComponentsNodeSelector: "{{ service.lables.split('=')[0] }}:{{ service.lables.split('=')[1] }}"
+  {% endif -%}
+  # 负载压力大时，不会轻易被驱逐
+  priorityClass: high-priority
+  # 出现故障(网络断开等)，卷会被自动回收
+  autoSalvage: true
+  # 当Longhorn卷意外分离,Longhorn将自动删除由控制器管理的工作负载pod
+  autoDeletePodWhenVolumeDetachedUnexpectedly: true
+  # Longhorn Manager将不会在Kubernetes被封锁的节点上调度副本
+  disableSchedulingOnCordonedNode: true
+  # Longhorn Manager将允许将卷的新副本调度到与现有健康副本相同分区中的节点上
+  replicaZoneSoftAntiAffinity: true
+  # 从不强制删除StatefulSet/Deployment终止pods
+  nodeDownPodDeletionPolicy: do-nothing
+  # 如果节点包含卷的最后一个健康副本，是否阻塞kubectl drain操作
+  allowNodeDrainWithLastHealthyReplica: false
+  # 允许为ext4设置额外的文件系统创建参数
+  mkfsExt4Parameters: -O ^64bit,^metadata_csum
+  # 当降级的卷中至少有一个失败的副本卷时，这个以秒为单位的间隔决定Longhorn为了重用失败副本的现有数据而不是直接为这个卷创建一个新副本最多需要等待多长时间 
+  replicaReplenishmentWaitInterval: 600
+  # 此设置控制一个节点上可以同时重建多少个副本
+  concurrentReplicaRebuildPerNodeLimit: 5
+  # 允许引擎控制器和引擎副本在每次写数据时禁用修订计数器文件更新
+  disableRevisionCounter: false
+  # 镜像拉取策略
+  systemManagedPodsImagePullPolicy: if-not-present
+  # 该设置允许用户创建和附加一个卷，该卷在创建时没有计划所有副本。
+  allowVolumeCreationWithDegradedAvailability: true
+  # 自动清理系统生成的副本快照	
+  autoCleanupSystemGeneratedSnapshot: true 
+  # 当使用该备份映像文件的磁盘中没有副本时，Longhorn将等待多长时间才能清理该备份映像文件
+  backingImageCleanupWaitInterval: 60
+  # 决定了当该备份映像的所有磁盘文件失效或未知时，Longhorn在重新下载该备份映像文件之前将等待多长时间。	
+  backingImageRecoveryWaitInterval: 300
+  orphanAutoDeletion: false
+  guaranteedEngineManagerCPU: 15
+  guaranteedReplicaManagerCPU: 15
+  kubernetesClusterAutoscalerEnabled: ~
+  storageNetwork: ~
+privateRegistry:
+  createSecret: ~
+  registryUrl: ~
+  registryUser: ~
+  registryPasswd: ~
+  registrySecret: ~
+
+longhornManager:
+  log:
+    ## Allowed values are `plain` or `json`.
+    format: {{ helm_chart.log_format }}
+  priorityClass: ~
+  tolerations: []
+  ## If you want to set tolerations for Longhorn Manager DaemonSet, delete the `[]` in the line above
+  ## and uncomment this example block
+  # - key: "key"
+  #   operator: "Equal"
+  #   value: "value"
+  #   effect: "NoSchedule"
+  nodeSelector: {}
+  ## If you want to set node selector for Longhorn Manager DaemonSet, delete the `{}` in the line above
+  ## and uncomment this example block
+  #  label-key1: "label-value1"
+  #  label-key2: "label-value2"
+  serviceAnnotations: {}
+  ## If you want to set annotations for the Longhorn Manager service, delete the `{}` in the line above
+  ## and uncomment this example block
+  #  annotation-key1: "annotation-value1"
+  #  annotation-key2: "annotation-value2"
+
+longhornDriver:
+  priorityClass: ~
+  tolerations: []
+  ## If you want to set tolerations for Longhorn Driver Deployer Deployment, delete the `[]` in the line above
+  ## and uncomment this example block
+  # - key: "key"
+  #   operator: "Equal"
+  #   value: "value"
+  #   effect: "NoSchedule"
+  nodeSelector: {}
+  ## If you want to set node selector for Longhorn Driver Deployer Deployment, delete the `{}` in the line above
+  ## and uncomment this example block
+  #  label-key1: "label-value1"
+  #  label-key2: "label-value2"
+
+longhornUI:
+  replicas: 1
+  priorityClass: ~
+  tolerations: []
+  ## If you want to set tolerations for Longhorn UI Deployment, delete the `[]` in the line above
+  ## and uncomment this example block
+  # - key: "key"
+  #   operator: "Equal"
+  #   value: "value"
+  #   effect: "NoSchedule"
+  nodeSelector: {}
+  ## If you want to set node selector for Longhorn UI Deployment, delete the `{}` in the line above
+  ## and uncomment this example block
+  #  label-key1: "label-value1"
+  #  label-key2: "label-value2"
+
+ingress:
+  ## Set to true to enable ingress record generation
+  enabled: false
+
+  ## Add ingressClassName to the Ingress
+  ## Can replace the kubernetes.io/ingress.class annotation on v1.18+
+  ingressClassName: ~
+
+  host: sslip.io
+
+  ## Set this to true in order to enable TLS on the ingress record
+  tls: false
+
+  ## Enable this in order to enable that the backend service will be connected at port 443
+  secureBackends: false
+
+  ## If TLS is set to true, you must declare what secret will store the key/certificate for TLS
+  tlsSecret: longhorn.local-tls
+
+  ## If ingress is enabled you can set the default ingress path
+  ## then you can access the UI by using the following full path
+  path: /
+
+  ## Ingress annotations done as key:value pairs
+  ## If you're using kube-lego, you will want to add:
+  ## kubernetes.io/tls-acme: true
+  ##
+  ## For a full list of possible ingress annotations, please see
+  ## ref: https://github.com/kubernetes/ingress-nginx/blob/master/docs/annotations.md
+  ##
+  ## If tls is set to true, annotation ingress.kubernetes.io/secure-backends: "true" will automatically be set
+  annotations:
+  #  kubernetes.io/ingress.class: nginx
+  #  kubernetes.io/tls-acme: true
+
+  secrets:
+  ## If you're providing your own certificates, please use this to add the certificates as secrets
+  ## key and certificate should start with -----BEGIN CERTIFICATE----- or
+  ## -----BEGIN RSA PRIVATE KEY-----
+  ##
+  ## name should line up with a tlsSecret set further up
+  ## If you're using kube-lego, this is unneeded, as it will create the secret for you if it is not set
+  ##
+  ## It is also possible to create and manage the certificates outside of this helm chart
+  ## Please see README.md for more information
+  # - name: longhorn.local-tls
+  #   key:
+  #   certificate:
+
+# Configure a pod security policy in the Longhorn namespace to allow privileged pods
+enablePSP: true
+
+## Specify override namespace, specifically this is useful for using longhorn as sub-chart
+## and its release namespace is not the `longhorn-system`
+namespaceOverride: ""
+
+# Annotations to add to the Longhorn Manager DaemonSet Pods. Optional.
+annotations: {}
+
+serviceAccount:
+  # Annotations to add to the service account
+  annotations: {}

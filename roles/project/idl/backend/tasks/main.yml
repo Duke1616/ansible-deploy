@@ -1,0 +1,53 @@
+---
+- name: Find out playbook's path
+  shell: pwd
+  register: playbook_path_output
+  tags:
+    - backend
+
+- set_fact:
+    tempPath: "{{playbook_path_output.stdout }}"
+  tags:
+    - backend
+
+- name: Inspect frontend images
+  community.docker.docker_image_info:
+    name:
+     - "{{ BACKEND_IMAGE }}"
+  register: result
+  tags:
+    - backend
+
+- name: Load frontend image
+  community.docker.docker_image_load:
+    path: /files/mongo.tar
+  when: result.images | length == 0 and network == false 
+  tags:
+    - backend
+
+- name: Copy Docker-compose configuration
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ tempPath }}/backend/files/docker-compose.yml"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart backend 
+  tags:
+    - backend
+
+- name: Get infos on container
+  community.docker.docker_container_info:
+    name: "{{ BACKEND_CONTAINER_NAME }}"
+  register: info
+  tags:
+    - backend
+
+- name: Start backend
+  docker_compose:
+    project_src: "{{ tempPath }}/backend/files"
+    project_name: "{{ project_name }}"
+  register: output
+  tags:
+    - backend

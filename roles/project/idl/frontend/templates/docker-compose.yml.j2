@@ -1,0 +1,20 @@
+version: '3'
+services:
+  {{ FRONTEND_CONTAINER_NAME }}:
+    restart: always
+    image: {{ FRONTEND_IMAGE }}
+    container_name: {{ FRONTEND_CONTAINER_NAME }}
+    ports:
+      - {{ FRONTEND_PORT }}:80
+    environment:
+      TZ: Asia/Shanghai
+      LANG: en_US.UTF-8
+    volumes:
+      - ../files/nginx.conf:/etc/nginx/nginx.conf
+      - ../files/{{ project_name }}.conf:/etc/nginx/conf.d/default.conf
+
+networks:
+  default:
+    external:
+      name: {{ DOCKER_NETWORK }}
+

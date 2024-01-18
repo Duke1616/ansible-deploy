@@ -1,0 +1,44 @@
+- name: Create directory
+  file:
+    path: "{{ deploy_path }}"
+    state: directory
+
+- name: Install ansible to run docker dependencies
+  include_tasks: "{{ inventory_dir }}/roles/docker/docker/tasks/install/depend.yml"
+
+- name: Create docker project network
+  community.docker.docker_network:
+    name: "{{ deploy_info.project_name }}"
+
+- name: Generate root password 
+  set_fact:
+    MYSQL_ROOT_PASSWORD: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+
+- name: Generate user password
+  set_fact:
+    "MYSQL_INIT_PASSWORD_{{ item.name | upper }}": "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+  loop: "{{ deploy_info.user }}"
+  register: result_user
+  when: deploy_info.user is none
+
+- name: copy docker-compose.yaml
+  template:
+    src: "{{ inventory_dir }}/roles/docker/mysql/templates/{{ item.src }}.j2"
+    dest: "{{ deploy_path }}/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+    force: "{{ item.force }}"
+  with_items:
+    - { src: 'my.cnf', dest: 'my.cnf', force: yes }
+    - { src: 'create_user.sh', dest: 'create_user.sh', force: no }
+    - { src: 'export.sh', dest: 'export.sh', force: no }
+    - { src: 'docker-compose.yaml', dest: 'docker-compose.yaml', force: yes }
+
+
+
+# - name: Start MySQL
+#   community.docker.docker_compose:
+#     project_src: "{{ deploy_path }}"
+#     project_name: "{{ deploy_info.project_name }}"
+#     env_file: "{{ deploy_path }}/export.sh"

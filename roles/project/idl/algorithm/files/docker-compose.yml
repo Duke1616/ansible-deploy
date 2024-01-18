@@ -1,0 +1,36 @@
+version: '3'
+services:
+  algorithm:
+    restart: always
+    container_name: ocr_interface
+    image: 10.31.0.200:9077/ebondmedcore/ocr_interface:uat-774e346c
+    command: sh ./deploy/start_rabbitmq_server.sh
+    environment:
+      - TZ=Asia/Shanghai
+      - NVIDIA_VISIBLE_DEVICES=all
+      - USE_MINIO_OR_OSS=MINIO
+      - RABBITMQ_USERNAME=ebond
+      - RABBITMQ_PASSWORD=sfrCxnuX0Tj6TdYvjhGYjCIJ
+      - RABBITMQ_SERVERIP=rabbitmq
+      - RABBITMQ_PORT=5672
+      - MinIO_OCR_ENDPOINT=minio:9000
+      - MinIO_OCR_ACCESS_KEY=ebond
+      - MinIO_OCR_SECRET_KEY=rq6MjmEwueZCTk7TsBmYB6zK
+      - MinIO_OCR_BUCKET=ebondidlrp
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          cpus: '0.5'
+          memory: 200m
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+
+networks:
+  default:
+    external:
+      name: ebond-idl-rp

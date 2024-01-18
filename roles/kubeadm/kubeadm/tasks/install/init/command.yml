@@ -1,0 +1,14 @@
+# - name: kubeadm command is exist
+#   shell: if which kubeadm;then echo true; else echo false; fi;
+#   register: kubeadm_command_exist
+
+# - name: install kubeadm
+#   include_tasks: "{{ ansible_distribution.split(' ')[0] }}.yml"
+#   when: 
+#     - kubeadm_command_exist.stdout == "false"
+
+# - name: copy make kubeadm command certificate 100 year
+#   copy:
+#     src: "{{ inventory_dir }}/tools/kubeadm/kubeadm"
+#     dest: /usr/bin/kubeadm
+#     mode: 0755

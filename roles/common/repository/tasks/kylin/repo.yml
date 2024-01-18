@@ -1,0 +1,10 @@
+- name: rm repo list
+  shell: rm -f /etc/yum.repos.d/*
+
+- name: copy repo mirror
+  template:
+    src: "{{ inventory_dir }}/roles/common/repository/templates/system/{{ ansible_distribution.split(' ')[0] | lower }}.repo.j2" 
+    dest: "/etc/yum.repos.d/{{ ansible_distribution.split(' ')[0] }}.repo"
+    owner: root
+    group: root
+    mode: 0644
